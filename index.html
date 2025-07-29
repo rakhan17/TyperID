@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TyperID Final v4 - The Ultimate Training Hub</title>
+    
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Memuat Font Inter & Font Awesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    
+    <!-- Memuat Three.js untuk Latar Belakang 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; overflow: hidden; }
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .tab-nav { transition: opacity 0.3s, visibility 0.3s; }
+        .tab-nav.hidden { opacity: 0; visibility: hidden; }
+        .tab.active, .mode-btn.active { background-color: #06b6d4; color: white; box-shadow: 0 0 15px rgba(6, 182, 212, 0.5); }
+        .tab:not(.active) { background-color: #374151; }
+        .mode-btn:not(.active) { background-color: #4b5563; }
+        .cursor { animation: blink 1s infinite; }
+        @keyframes blink { 50% { border-left-color: #a3e635; } }
+        .char-span { transition: color 0.2s, background-color 0.2s; }
+        .char-correct { color: #4ade80; }
+        .char-incorrect { color: #f87171; background-color: rgba(239, 68, 68, 0.2); border-radius: 2px; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+        .shake-error { animation: shake 0.2s ease-in-out; }
+        .ripple { position: absolute; border-radius: 50%; background-color: rgba(163, 230, 53, 0.5); transform: scale(0); animation: ripple 0.6s linear; }
+        @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+        .view { display: none; }
+        .view.active { display: flex; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Developer Tag Style */
+        .dev-tag {
+            background: linear-gradient(90deg, #a3e635, #22d3ee, #a3e635);
+            background-size: 200% 200%;
+            color: #111827;
+            animation: gradient-animation 3s ease infinite;
+        }
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Toast Notification Style */
+        #toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .toast {
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            animation: toast-in 0.5s forwards, toast-out 0.5s forwards 2.5s;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .toast.info { background-color: #06b6d4; }
+        .toast.error { background-color: #ef4444; }
+        @keyframes toast-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
+
+        /* Countdown Overlay Style */
+        #countdown-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 10000;
+            display: none; /* Changed to none */
+            justify-content: center;
+            align-items: center;
+        }
+        #countdown-text {
+            font-size: 10rem;
+            font-weight: 900;
+            color: white;
+            animation: countdown-zoom 1s ease-in-out infinite;
+        }
+        @keyframes countdown-zoom {
+            from { transform: scale(0.8); opacity: 0.5; }
+            to { transform: scale(1.2); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-slate-300 flex items-center justify-center min-h-screen p-4 antialiased">
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Countdown Overlay -->
+    <div id="countdown-overlay">
+        <span id="countdown-text">3</span>
+    </div>
+
+    <div class="w-full max-w-5xl mx-auto z-10 h-screen overflow-y-auto pb-16 scrollbar-hide">
+        <!-- Header -->
+        <header class="text-center my-8">
+             <h1 class="text-5xl md:text-6xl font-black text-white tracking-tighter">
+                <svg width="300" height="70" viewBox="0 0 300 70" class="inline-block">
+                    <text x="0" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="white">Typer</text>
+                    <text x="175" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="#22d3ee">ID</text>
+                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v4</text>
+                </svg>
+            </h1>
+            <p class="text-slate-400 mt-1">The Ultimate Typing & CPS Training Hub</p>
+            <div id="developer-notice" class="hidden mt-2">
+                <span class="text-sm">Kamu adalah seorang <span class="dev-tag font-bold px-2 py-1 rounded-md text-xs">Developer</span></span>
+            </div>
+        </header>
+
+        <!-- ########## NAME ENTRY VIEW ########## -->
+        <div id="name-entry-view" class="view active flex-col items-center gap-6 p-8 bg-gray-800/80 backdrop-blur-sm rounded-lg border border-gray-700 max-w-md mx-auto">
+            <h2 class="text-2xl font-bold text-cyan-400">Selamat Datang!</h2>
+            <p class="text-center text-slate-400">Masukkan nama panggilan Anda untuk bermain solo atau online.</p>
+            <input type="text" id="player-name-input" placeholder="Nama Anda..." maxlength="30" class="w-full text-center bg-gray-700 text-white px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-400">
+            <button id="enter-app-btn" class="w-full px-6 py-3 bg-lime-500 text-gray-900 font-bold rounded-md hover:bg-lime-600 transition-colors text-lg">Masuk</button>
+        </div>
+
+        <!-- ########## MAIN APP VIEW ########## -->
+        <div id="main-app-view" class="view flex-col">
+            <!-- Tab Kontrol -->
+            <div id="main-tab-nav" class="tab-nav flex justify-center gap-2 mb-6">
+                <button id="solo-tab-btn" class="tab active px-6 py-2 font-bold rounded-md transition-all duration-300 flex items-center gap-2"><i class="fa-solid fa-user"></i> Solo</button>
+                <button id="online-tab-btn" class="tab px-6 py-2 font-bold rounded-md transition-all duration-300 flex items-center gap-2"><i class="fa-solid fa-users"></i> Online</button>
+            </div>
+
+            <main>
+                <!-- ########## SOLO TESTER ########## -->
+                <div id="solo-tester" class="view active flex-col gap-6">
+                    <!-- Konten Solo akan di-generate oleh JS -->
+                </div>
+
+                <!-- ########## ONLINE TESTER ########## -->
+                <div id="online-tester" class="view flex-col gap-6">
+                    <!-- LOBBY VIEW -->
+                    <div id="lobby-view" class="view active flex-col items-center gap-6 p-8 bg-gray-800/80 backdrop-blur-sm rounded-lg border border-gray-700">
+                        <h2 class="text-2xl font-bold text-cyan-400">Lobby Pertandingan Online</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
+                            <button id="create-wpm-match-btn" class="px-6 py-3 bg-cyan-500 text-white font-bold rounded-md hover:bg-cyan-600 transition-colors text-lg flex items-center justify-center gap-2"><i class="fa-solid fa-keyboard"></i> Buat Match WPM</button>
+                            <button id="create-cps-match-btn" class="px-6 py-3 bg-cyan-500 text-white font-bold rounded-md hover:bg-cyan-600 transition-colors text-lg flex items-center justify-center gap-2"><i class="fa-solid fa-computer-mouse"></i> Buat Match CPS</button>
+                        </div>
+                        <button id="join-random-match-btn" class="w-full max-w-2xl px-6 py-3 bg-purple-600 text-white font-bold rounded-md hover:bg-purple-700 transition-colors text-lg flex items-center justify-center gap-2"><i class="fa-solid fa-dice"></i> Gabung Match Acak</button>
+                        <div class="text-center text-slate-400">atau</div>
+                        <div class="w-full max-w-sm flex flex-col gap-2">
+                            <input type="text" id="join-match-input" placeholder="Masukkan Kode Pertandingan" class="text-center bg-gray-700 text-white px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                            <button id="join-match-btn" class="w-full px-6 py-3 bg-lime-500 text-gray-900 font-bold rounded-md hover:bg-lime-600 transition-colors text-lg">Gabung Dengan Kode</button>
+                        </div>
+                    </div>
+
+                    <!-- MATCH ROOM VIEW -->
+                    <div id="match-room-view" class="view flex-col gap-6">
+                        <!-- Konten Ruang Match akan di-generate oleh JS -->
+                    </div>
+                </div>
+            </main>
+        </div>
+        
+        <!-- ########## RESULTS MODAL ########## -->
+        <div id="results-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm view items-center justify-center p-4">
+            <div id="results-card" class="bg-gray-800 border border-lime-500/50 rounded-lg shadow-2xl p-6 md:p-8 w-full max-w-lg flex flex-col gap-4">
+                <h2 class="text-3xl font-bold text-center text-lime-400">Hasil Pertandingan</h2>
+                <div id="results-list" class="flex flex-col gap-3 max-h-[50vh] overflow-y-auto">
+                    <!-- Hasil pemain akan ditampilkan di sini -->
+                </div>
+                <button id="back-to-lobby-btn" class="mt-4 w-full px-6 py-3 bg-cyan-500 text-white font-bold rounded-md hover:bg-cyan-600 transition-colors text-lg">Kembali ke Lobby</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- FIREBASE SCRIPT -->
+    <script type="module">
+        // Mengimpor fungsi yang diperlukan dari Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, where, getDocs, limit, serverTimestamp, runTransaction, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Konfigurasi Firebase Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyDVphUcSBbIG98ueli8OrhkSnC3oHV4FHc",
+            authDomain: "typerid-online.firebaseapp.com",
+            projectId: "typerid-online",
+            storageBucket: "typerid-online.appspot.com",
+            messagingSenderId: "292685742496",
+            appId: "1:292685742496:web:e60fbc0fbda30ebacce4c5",
+            measurementId: "G-K2M5YHQTF4"
+        };
+        
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Mengekspos fungsi Firebase ke window object agar dapat diakses oleh skrip utama
+        window.firebase = { db, doc, setDoc, getDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, where, getDocs, limit, serverTimestamp, runTransaction, writeBatch };
+    </script>
+    
+    <!-- MAIN APP SCRIPT -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // ==================================================
+            // 3D BACKGROUND
+            // ==================================================
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            const particlesGeometry = new THREE.BufferGeometry;
+            const particlesCnt = 5000;
+            const posArray = new Float32Array(particlesCnt * 3);
+            for (let i = 0; i < particlesCnt * 3; i++) { posArray[i] = (Math.random() - 0.5) * 10; }
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particlesMaterial = new THREE.PointsMaterial({ size: 0.005, color: 0x06b6d4 });
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+            camera.position.z = 5;
+            let mouseX = 0;
+            document.addEventListener('mousemove', (event) => { mouseX = event.clientX; });
+            const clock = new THREE.Clock();
+            const animate = () => {
+                requestAnimationFrame(animate);
+                particlesMesh.rotation.y = -0.1 * clock.getElapsedTime() + (mouseX - window.innerWidth / 2) * 0.00005;
+                renderer.render(scene, camera);
+            };
+            animate();
+            window.addEventListener('resize', () => {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+            });
+
+            // ==================================================
+            // GLOBAL STATE & DOM ELEMENTS
+            // ==================================================
+            const views = {
+                nameEntry: document.getElementById('name-entry-view'),
+                mainApp: document.getElementById('main-app-view'),
+                soloTester: document.getElementById('solo-tester'),
+                onlineTester: document.getElementById('online-tester'),
+                lobby: document.getElementById('lobby-view'),
+                matchRoom: document.getElementById('match-room-view'),
+                resultsModal: document.getElementById('results-modal'),
+            };
+            const nameInput = document.getElementById('player-name-input');
+            const enterAppBtn = document.getElementById('enter-app-btn');
+            const mainTabNav = document.getElementById('main-tab-nav');
+            const soloTabBtn = document.getElementById('solo-tab-btn');
+            const onlineTabBtn = document.getElementById('online-tab-btn');
+            const createWpmMatchBtn = document.getElementById('create-wpm-match-btn');
+            const createCpsMatchBtn = document.getElementById('create-cps-match-btn');
+            const joinRandomMatchBtn = document.getElementById('join-random-match-btn');
+            const joinMatchInput = document.getElementById('join-match-input');
+            const joinMatchBtn = document.getElementById('join-match-btn');
+            const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
+            const developerNotice = document.getElementById('developer-notice');
+            const countdownOverlay = document.getElementById('countdown-overlay');
+            const countdownText = document.getElementById('countdown-text');
+
+            let myPlayerId = localStorage.getItem('typerIdPlayerId') || `player_${Math.random().toString(36).substr(2, 9)}`;
+            localStorage.setItem('typerIdPlayerId', myPlayerId);
+            let myPlayerName = '';
+            let isDeveloper = false;
+            let currentMatchId = null;
+            let unsubscribeFromMatch = null;
+            let onlineState = {};
+            let localCpsTimer = null;
+            let localGameStarted = false;
+
+            const textSamples = {
+                id: ["Pemandangan senja di tepi pantai selalu berhasil menenangkan jiwa yang gelisah.", "Revolusi industri mengubah tatanan sosial dan ekonomi dunia secara fundamental.", "Kucing oranye itu tidur nyenyak di atas tumpukan buku tua yang berdebu.", "Setiap pagi, aroma kopi segar membangunkan semangat untuk memulai hari baru.", "Teknologi blockchain memiliki potensi besar untuk merevolusi sistem keuangan global.", "Membaca buku fiksi ilmiah dapat membuka cakrawala imajinasi tanpa batas.", "Hutan hujan tropis adalah paru-paru dunia yang harus kita jaga kelestariannya.", "Algoritma komputer bekerja di balik layar dalam hampir setiap aspek kehidupan modern.", "Keberanian bukanlah ketiadaan rasa takut, tetapi kemampuan untuk menaklukkannya.", "Rasa ingin tahu adalah mesin penggerak utama di balik semua penemuan hebat manusia."],
+                en: ["The silhouette of the city skyline was breathtaking against the vibrant sunset.", "Quantum computing promises to solve problems currently intractable for classical computers.", "A gentle breeze rustled the leaves of the ancient oak tree in the quiet meadow.", "Exploring the cosmos reveals the vastness of the universe and our small place within it.", "The intricate dance of supply and demand dictates the rhythm of the global market.", "History is not just a collection of dates, but a story of human triumphs and failures.", "Cybersecurity has become a critical field in our increasingly interconnected digital world.", "The old library smelled of aging paper, leather bindings, and a hint of vanilla.", "An artist's true masterpiece is the ability to evoke emotion through their creation.", "Persistence and dedication are the cornerstones of achieving any meaningful goal."]
+            };
+
+            // ==================================================
+            // UTILITY FUNCTIONS
+            // ==================================================
+            function showToast(message, type = 'info') {
+                const toastContainer = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                toastContainer.appendChild(toast);
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+            }
+
+            function toggleMainTabs(show) {
+                if (show) {
+                    mainTabNav.classList.remove('hidden');
+                } else {
+                    mainTabNav.classList.add('hidden');
+                }
+            }
+
+            // ==================================================
+            // VIEW MANAGEMENT
+            // ==================================================
+            function switchView(viewName) {
+                const mainViews = ['nameEntry', 'mainApp', 'resultsModal'];
+                const tabViews = ['soloTester', 'onlineTester'];
+                const onlineSubViews = ['lobby', 'matchRoom'];
+
+                if (mainViews.includes(viewName)) {
+                    Object.values(views).forEach(view => view.classList.remove('active'));
+                    if(views[viewName]) views[viewName].classList.add('active');
+                } else if (tabViews.includes(viewName)) {
+                    tabViews.forEach(subView => { if (views[subView]) views[subView].classList.remove('active'); });
+                    if(views[viewName]) views[viewName].classList.add('active');
+                } else if (onlineSubViews.includes(viewName)) {
+                    onlineSubViews.forEach(subView => { if (views[subView]) views[subView].classList.remove('active'); });
+                    if(views[viewName]) views[viewName].classList.add('active');
+                }
+            }
+
+            function showMainApp() {
+                const name = nameInput.value.trim();
+                const devPrefix = '[17102009]';
+
+                if (!name) {
+                    showToast('Nama tidak boleh kosong!', 'error');
+                    return;
+                }
+                
+                if (name.startsWith(devPrefix)) {
+                    isDeveloper = true;
+                    myPlayerName = name.substring(devPrefix.length).trim() || "Developer";
+                    developerNotice.classList.remove('hidden');
+                } else {
+                    isDeveloper = false;
+                    myPlayerName = name;
+                    developerNotice.classList.add('hidden');
+                }
+
+                localStorage.setItem('typerIdPlayerName', myPlayerName);
+                localStorage.setItem('typerIdIsDeveloper', isDeveloper);
+                
+                switchView('mainApp');
+                const matchIdFromUrl = window.location.hash.substring(7); // #match=MATCHID
+                if (matchIdFromUrl) {
+                    onlineTabBtn.click();
+                    joinMatch(matchIdFromUrl);
+                } else {
+                    soloTabBtn.click();
+                }
+            }
+
+            // ==================================================
+            // INITIALIZATION
+            // ==================================================
+            function initializeApp() {
+                const savedName = localStorage.getItem('typerIdPlayerName');
+                const savedDevStatus = localStorage.getItem('typerIdIsDeveloper') === 'true';
+
+                if (savedName) {
+                    myPlayerName = savedName;
+                    isDeveloper = savedDevStatus;
+                    if (isDeveloper) {
+                        nameInput.value = `[17102009]${savedName}`;
+                        developerNotice.classList.remove('hidden');
+                    } else {
+                        nameInput.value = savedName;
+                        developerNotice.classList.add('hidden');
+                    }
+                }
+                switchView('nameEntry');
+                injectSoloUI();
+            }
+
+            enterAppBtn.addEventListener('click', showMainApp);
+            nameInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') showMainApp();
+            });
+
+            soloTabBtn.addEventListener('click', () => {
+                switchView('soloTester');
+                soloTabBtn.classList.add('active');
+                onlineTabBtn.classList.remove('active');
+            });
+
+            onlineTabBtn.addEventListener('click', () => {
+                if (!myPlayerName) {
+                    showToast("Masukkan nama Anda terlebih dahulu!", 'error');
+                    switchView('nameEntry');
+                    return;
+                }
+                switchView('onlineTester');
+                switchView('lobby');
+                onlineTabBtn.classList.add('active');
+                soloTabBtn.classList.remove('active');
+            });
+            
+            initializeApp();
+
+            // ==================================================
+            // SOLO MODE (UNCHANGED)
+            // ==================================================
+            function injectSoloUI() {
+                views.soloTester.innerHTML = `
+                    <div class="bg-gray-800/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-700/50 flex justify-center gap-2 mb-6">
+                        <button class="solo-test-type-btn mode-btn active px-4 py-1 rounded font-semibold" data-type="wpm">WPM Test</button>
+                        <button class="solo-test-type-btn mode-btn px-4 py-1 rounded font-semibold" data-type="cps">CPS Test</button>
+                    </div>
+                    <div id="solo-wpm-container"></div>
+                    <div id="solo-cps-container" class="hidden"></div>
+                `;
+                injectSoloWpmUI();
+                injectSoloCpsUI();
+                
+                document.querySelectorAll('.solo-test-type-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.solo-test-type-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        const type = btn.dataset.type;
+                        document.getElementById('solo-wpm-container').classList.toggle('hidden', type !== 'wpm');
+                        document.getElementById('solo-cps-container').classList.toggle('hidden', type !== 'cps');
+                    });
+                });
+            }
+            function injectSoloWpmUI() {
+                document.getElementById('solo-wpm-container').innerHTML = `<div class="flex flex-col gap-6"><div class="bg-gray-800/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-700/50 flex justify-center gap-2"><button class="solo-mode-btn mode-btn px-4 py-1 rounded font-semibold" data-mode="time" data-duration="15">15s</button><button class="solo-mode-btn mode-btn px-4 py-1 rounded font-semibold" data-mode="time" data-duration="30">30s</button><button class="solo-mode-btn mode-btn px-4 py-1 rounded font-semibold" data-mode="time" data-duration="60">60s</button><button class="solo-mode-btn mode-btn active px-4 py-1 rounded font-semibold" data-mode="text" data-duration="0">Teks</button></div><div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center"><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">WPM</p><p id="solo-wpm" class="text-4xl font-bold text-white">0</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">Akurasi</p><p id="solo-accuracy" class="text-4xl font-bold text-white">100%</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">Waktu</p><p id="solo-timer" class="text-4xl font-bold text-white">0s</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">Kesalahan</p><p id="solo-error-count" class="text-4xl font-bold text-white">0</p></div></div><div id="solo-text-container" class="bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg shadow-lg relative min-h-[140px] flex items-center border border-gray-700"><p id="solo-text-display" class="text-2xl leading-relaxed tracking-wide text-slate-400 select-none"></p><input id="solo-input-field" type="text" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-default" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div><div class="flex flex-col md:flex-row gap-4"><div class="flex-grow bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-lime-500/20"><h3 class="text-center text-lime-400 font-bold mb-2 flex items-center justify-center gap-2"><i class="fa-solid fa-chart-line"></i> Statistik Sesi Ini</h3><div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center"><div><p class="text-sm">Raw WPM</p><p id="solo-raw-wpm" class="text-2xl font-bold">-</p></div><div><p class="text-sm">Karakter</p><p id="solo-char-stats" class="text-2xl font-bold">-</p></div><div><p class="text-sm">Avg. WPM</p><p id="solo-avg-wpm" class="text-2xl font-bold">-</p></div><div><p class="text-sm">Avg. Akurasi</p><p id="solo-avg-accuracy" class="text-2xl font-bold">-</p></div></div><button id="solo-reset-history-btn" class="text-xs text-red-400 hover:underline text-center w-full mt-3">Reset Statistik</button></div><div class="flex flex-col gap-2"><div class="flex gap-2"><button id="solo-lang-id" class="w-full px-4 py-2 bg-cyan-500 text-white font-bold rounded-md hover:bg-cyan-600 transition-colors">Indonesia</button><button id="solo-lang-en" class="w-full px-4 py-2 bg-gray-700 text-slate-300 font-bold rounded-md hover:bg-gray-600 transition-colors">English</button></div><button id="solo-restart-btn" class="w-full px-6 py-2 bg-lime-400 text-gray-900 font-bold rounded-md hover:bg-lime-500 transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-right"></i> Mulai Ulang</button></div></div></div>`;
+                initializeSoloWpmMode();
+            }
+            function injectSoloCpsUI() {
+                document.getElementById('solo-cps-container').innerHTML = `<div class="flex flex-col gap-6 items-center"><div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center w-full"><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">CPS</p><p id="solo-cps" class="text-4xl font-bold text-white">0</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">Klik</p><p id="solo-clicks" class="text-4xl font-bold text-white">0</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20 col-span-2"><p class="text-sm text-cyan-400">Waktu</p><p id="solo-cps-timer" class="text-4xl font-bold text-white">5s</p></div></div><div id="solo-click-area" class="w-full h-64 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg flex items-center justify-center text-center border-2 border-dashed border-cyan-500/50 cursor-pointer hover:border-cyan-500 relative overflow-hidden"><p id="solo-click-area-text" class="text-3xl font-bold text-white">Klik di sini untuk memulai!</p></div><button id="solo-restart-cps-btn" class="w-full max-w-xs px-6 py-3 bg-lime-400 text-gray-900 font-bold rounded-md hover:bg-lime-500 transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-right"></i> Mulai Ulang</button></div>`;
+                initializeSoloCpsMode();
+            }
+            function initializeSoloWpmMode(){const t=document.getElementById("solo-text-display"),e=document.getElementById("solo-text-container"),n=document.getElementById("solo-input-field"),o=document.getElementById("solo-wpm"),a=document.getElementById("solo-accuracy"),i=document.getElementById("solo-timer"),s=document.getElementById("solo-error-count"),l=document.getElementById("solo-raw-wpm"),c=document.getElementById("solo-char-stats"),r=document.getElementById("solo-restart-btn"),d=document.getElementById("solo-lang-id"),u=document.getElementById("solo-lang-en"),m=document.getElementById("solo-avg-wpm"),p=document.getElementById("solo-avg-accuracy"),g=document.querySelectorAll(".solo-mode-btn"),h=document.getElementById("solo-reset-history-btn");let y="id",f="text",v=0,w="",b=[],k=0,C=0,E=null,M=null,S=!1,L=[];function T(){const t=localStorage.getItem("typerIdSoloHistory");L=t?JSON.parse(t):[],A()}function I(){localStorage.setItem("typerIdSoloHistory",JSON.stringify(L))}function q(){confirm("Apakah Anda yakin ingin mereset riwayat statistik solo?")&&(L=[],localStorage.removeItem("typerIdSoloHistory"),A())}function x(){y_(),w=textSamples[y][Math.floor(Math.random()*textSamples[y].length)],t.innerHTML="",b=w.split("").map(e=>{const n=document.createElement("span");return n.className="char-span",n.innerText=e,t.appendChild(n),n}),b.length>0&&b[0].classList.add("cursor","border-l-2","border-lime-400"),n.focus()}function y_(){clearInterval(M),S=!1,k=0,C=0,E=null,M=null,n.value="",o.textContent="0",a.textContent="100%",s.textContent="0",l.textContent="-",c.textContent="-",i.textContent="time"===f?`${v}s`:"0s",b&&b.length>0&&(b.forEach(t=>{t.className="char-span"}),b[0].classList.add("cursor","border-l-2","border-lime-400"))}function A(){L.length===0?(m.textContent="-",p.textContent="-"): (m.textContent=Math.round(L.reduce((t,e)=>t+e.wpm,0)/L.length),p.textContent=`${Math.round(L.reduce((t,e)=>t+e.accuracy,0)/L.length)}%`)}function B(t){if(S)return;if("Backspace"===t.key&&k>0){t.preventDefault(),k<b.length&&b[k].classList.remove("cursor","border-l-2","border-lime-400"),k--,b[k].className="char-span",b[k].classList.add("cursor","border-l-2","border-lime-400")}}function D(t){if(S||k>=w.length)return;E||(E=new Date,M=setInterval(H,500));const o=t.target.value.slice(-1);t.target.value="";const a=w[k],i=b[k];if(o!==a){i.classList.contains("char-incorrect")||(C++,i.classList.add("char-incorrect")),e.classList.remove("shake-error"),void e.offsetWidth,e.classList.add("shake-error"),H();return}i.classList.remove("char-incorrect"),i.classList.add("char-correct"),i.classList.remove("cursor","border-l-2","border-lime-400"),k++,k<w.length?b[k].classList.add("cursor","border-l-2","border-lime-400"):"text"===f&&P(),H()}function H(){if(!E||S)return;const t=(new Date-E)/1e3;if("time"===f){const e=v-t;if(i.textContent=`${Math.max(0,Math.ceil(e))}s`,e<=0)return void P()}else i.textContent=`${Math.floor(t)}s`;const e=k-C,n=k>0?Math.round(e/k*100):100,r=t>0?Math.round(e/5/(t/60)):0,d=t>0?Math.round(k/5/(t/60)):0;o.textContent=r,a.textContent=`${n}%`,s.textContent=C,l.textContent=d,c.textContent=`${e}/${C}`}function P(){if(S)return;S=!0,clearInterval(M),n.blur();const t=(new Date-E)/1e3,e=k-C,i=t>0?Math.round(e/5/(t/60)):0,s=k>0?Math.round(e/k*100):100;o.textContent=i,a.textContent=`${s}%`,k>5&&(L.push({wpm:i,accuracy:s}),I(),A())}g.forEach(t=>{t.addEventListener("click",()=>{g.forEach(t=>t.classList.remove("active")),t.classList.add("active"),f=t.dataset.mode,v=parseInt(t.dataset.duration,10),x()})}),n.addEventListener("input",D),n.addEventListener("keydown",B),r.addEventListener("click",x),d.addEventListener("click",()=>U("id")),u.addEventListener("click",()=>U("en")),t.addEventListener("click",()=>n.focus()),h.addEventListener("click",q);function U(t){y=t,d.classList.toggle("bg-cyan-500","id"===t),d.classList.toggle("bg-gray-700","id"!==t),u.classList.toggle("bg-cyan-500","en"===t),u.classList.toggle("bg-gray-700","en"!==t),x()}T(),x()}
+            function initializeSoloCpsMode(){const t=document.getElementById("solo-click-area"),e=document.getElementById("solo-click-area-text"),n=document.getElementById("solo-cps"),o=document.getElementById("solo-clicks"),a=document.getElementById("solo-cps-timer"),i=document.getElementById("solo-restart-cps-btn");let s,l=5,c=0,r=!1;function d(){clearInterval(s),l=5,c=0,r=!1,n.textContent="0",o.textContent="0",a.textContent=`${l}s`,e.textContent="Klik di sini untuk memulai!",t.style.cursor="pointer"}function u(){if(r)return;r=!0,c=0,o.textContent="0",e.textContent="Klik!",s=setInterval(()=>{l--,a.textContent=`${l}s`;const t=c/(5-l);n.textContent=isNaN(t)?"0":t.toFixed(2),l<=0&&m()},1e3)}function m(){clearInterval(s),r=!1;const t=(c/5).toFixed(2);n.textContent=t,e.textContent=`Selesai! CPS Anda: ${t}`,t.style.cursor="default"}t.addEventListener("click",n=>{!r&&l>0&&u(),r&&(c++,o.textContent=c,function(e){const n=document.createElement("span");n.className="ripple",t.appendChild(n);const o=t.getBoundingClientRect();n.style.left=`${e.clientX-o.left}px`,n.style.top=`${e.clientY-o.top}px`,n.onanimationend=()=>n.remove()}(n))}),i.addEventListener("click",d),d()}
+
+            // ==================================================
+            // ONLINE MODE LOGIC
+            // ==================================================
+            async function createMatch(matchType) {
+                const { db, collection, addDoc, serverTimestamp } = window.firebase;
+                const textToType = matchType === 'wpm' ? textSamples.en[Math.floor(Math.random() * textSamples.en.length)] : '';
+                
+                try {
+                    const matchRef = await addDoc(collection(db, "matches"), {
+                        matchType,
+                        textToType,
+                        cpsDuration: 5,
+                        status: "waiting",
+                        createdAt: serverTimestamp(),
+                        hostId: myPlayerId,
+                        players: {
+                            [myPlayerId]: { name: myPlayerName, score: 0, progress: 0, finished: false, isDeveloper }
+                        }
+                    });
+                    enterMatchRoom(matchRef.id);
+                } catch (error) {
+                    console.error("Gagal membuat match:", error);
+                    showToast("Gagal membuat pertandingan. Coba lagi.", "error");
+                }
+            }
+
+            async function joinMatch(matchId) {
+                const { db, doc, runTransaction } = window.firebase;
+                if (!matchId) {
+                    showToast("Masukkan kode pertandingan.", "error");
+                    return;
+                }
+                const matchDocRef = doc(db, "matches", matchId);
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const docSnap = await transaction.get(matchDocRef);
+                        if (!docSnap.exists()) {
+                            throw "Pertandingan tidak ditemukan!";
+                        }
+                        const matchData = docSnap.data();
+                        if (matchData.status !== 'waiting') {
+                            throw "Pertandingan sudah dimulai atau selesai!";
+                        }
+                        transaction.update(matchDocRef, {
+                            [`players.${myPlayerId}`]: { name: myPlayerName, score: 0, progress: 0, finished: false, isDeveloper }
+                        });
+                    });
+                    enterMatchRoom(matchId);
+                } catch (error) {
+                    console.error("Gagal bergabung:", error);
+                    showToast(`Gagal bergabung: ${error}`, "error");
+                }
+            }
+            
+            async function joinRandomMatch() {
+                const { db, collection, query, where, getDocs, limit } = window.firebase;
+                try {
+                    const q = query(collection(db, "matches"), where("status", "==", "waiting"), limit(10));
+                    const querySnapshot = await getDocs(q);
+                    if (querySnapshot.empty) {
+                        showToast("Tidak ada pertandingan yang tersedia. Coba buat satu!");
+                    } else {
+                        const randomDoc = querySnapshot.docs[Math.floor(Math.random() * querySnapshot.docs.length)];
+                        await joinMatch(randomDoc.id);
+                    }
+                } catch (error) {
+                    console.error("Error mencari match acak:", error);
+                    showToast("Gagal mencari pertandingan acak.", "error");
+                }
+            }
+
+            function enterMatchRoom(matchId) {
+                currentMatchId = matchId;
+                localGameStarted = false;
+                toggleMainTabs(false);
+                window.location.hash = `match=${matchId}`;
+                switchView('onlineTester');
+                switchView('matchRoom');
+                listenToMatch(matchId);
+            }
+
+            function listenToMatch(matchId) {
+                const { db, doc, onSnapshot } = window.firebase;
+                const matchDocRef = doc(db, "matches", matchId);
+
+                if (unsubscribeFromMatch) unsubscribeFromMatch();
+
+                unsubscribeFromMatch = onSnapshot(matchDocRef, (doc) => {
+                    if (!doc.exists()) {
+                        if(views.resultsModal.classList.contains('active')) return;
+                        showToast("Pertandingan telah dibubarkan.", "error");
+                        leaveMatch(true);
+                        return;
+                    }
+                    
+                    const matchData = doc.data();
+                    onlineState = matchData;
+                    
+                    if (views.resultsModal.classList.contains('active')) return;
+
+                    renderMatchRoomUI(matchData);
+
+                    if (matchData.status === 'starting' && !localGameStarted) {
+                        showCountdown();
+                    } else if (matchData.status === 'playing' && !localGameStarted) {
+                        localGameStarted = true;
+                        if (matchData.matchType === 'wpm') initializeOnlineWpmGame(matchData);
+                        else initializeOnlineCpsGame(matchData);
+                    }
+
+                    const allPlayersFinished = Object.values(matchData.players).every(p => p.finished);
+                    if (allPlayersFinished && matchData.status === 'playing') {
+                        showResults(matchData);
+                    }
+                });
+            }
+
+            async function leaveMatch(isMatchDeleted = false) {
+                if (unsubscribeFromMatch) {
+                    unsubscribeFromMatch();
+                    unsubscribeFromMatch = null;
+                }
+                
+                if (currentMatchId && !isMatchDeleted) {
+                    const { db, doc, runTransaction, deleteDoc } = window.firebase;
+                    const matchDocRef = doc(db, "matches", currentMatchId);
+                    try {
+                        await runTransaction(db, async (transaction) => {
+                            const matchDoc = await transaction.get(matchDocRef);
+                            if (!matchDoc.exists()) return;
+
+                            const data = matchDoc.data();
+                            const newPlayers = { ...data.players };
+                            delete newPlayers[myPlayerId];
+
+                            if (data.hostId === myPlayerId || Object.keys(newPlayers).length === 0) {
+                                transaction.delete(matchDocRef);
+                            } else {
+                                transaction.update(matchDocRef, { players: newPlayers });
+                            }
+                        });
+                    } catch (error) {
+                        console.error("Gagal keluar dari match:", error);
+                    }
+                }
+                
+                resetOnlineState();
+            }
+
+            function resetOnlineState() {
+                currentMatchId = null;
+                onlineState = {};
+                localGameStarted = false;
+                toggleMainTabs(true);
+                window.location.hash = '';
+                switchView('mainApp');
+                onlineTabBtn.click();
+            }
+
+            async function showCountdown() {
+                countdownOverlay.style.display = 'flex';
+                let count = 3;
+                countdownText.textContent = count;
+
+                const interval = setInterval(async () => {
+                    count--;
+                    if (count > 0) {
+                        countdownText.textContent = count;
+                    } else if (count === 0) {
+                        countdownText.style.fontSize = '8rem';
+                        countdownText.textContent = 'GO!';
+                    } else {
+                        clearInterval(interval);
+                        countdownOverlay.style.display = 'none';
+                        countdownText.style.fontSize = '10rem'; // Reset font size
+                        // Only host updates the status to 'playing'
+                        if (onlineState.hostId === myPlayerId) {
+                            const { db, doc, updateDoc } = window.firebase;
+                            await updateDoc(doc(db, "matches", currentMatchId), { status: "playing" });
+                        }
+                    }
+                }, 1000);
+            }
+
+            function renderMatchRoomUI(data) {
+                const matchRoom = views.matchRoom;
+                let gameAreaHTML = '';
+                const isGameActive = data.status === 'playing' || data.status === 'starting';
+
+                if (data.matchType === 'wpm') {
+                    const textWithSpans = data.textToType.split('').map(char => `<span class="char-span">${char}</span>`).join('');
+                    gameAreaHTML = `
+                        <div id="online-text-container" class="bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg shadow-lg relative min-h-[140px] flex items-center border border-gray-700">
+                            <p id="online-text-display" class="text-2xl leading-relaxed tracking-wide text-slate-400 select-none">${isGameActive ? textWithSpans : 'Menunggu host memulai pertandingan...'}</p>
+                            <input id="online-input-field" type="text" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-default" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" ${!isGameActive ? 'disabled' : ''}>
+                        </div>
+                    `;
+                } else { // CPS
+                    gameAreaHTML = `
+                        <div id="online-click-area" class="w-full h-64 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg flex flex-col items-center justify-center text-center border-2 border-dashed border-cyan-500/50 relative overflow-hidden ${isGameActive ? 'cursor-pointer hover:border-cyan-500' : 'cursor-not-allowed'}">
+                            <p id="online-click-area-text" class="text-3xl font-bold text-white">${isGameActive ? 'KLIK SECEPATNYA!' : 'Menunggu host memulai pertandingan...'}</p>
+                            <p id="online-cps-timer-display" class="text-5xl font-black text-lime-400 mt-4">${data.cpsDuration}s</p>
+                        </div>
+                    `;
+                }
+
+                const isHost = data.hostId === myPlayerId;
+                let controlsHTML = `<button id="leave-match-btn" class="px-6 py-3 bg-red-500 text-white font-bold rounded-md hover:bg-red-600">Keluar</button>`;
+                if (isHost && data.status === 'waiting') {
+                    controlsHTML = `<button id="start-match-btn" class="px-6 py-3 bg-lime-500 text-gray-900 font-bold rounded-md hover:bg-lime-600">Mulai Pertandingan</button>` + controlsHTML;
+                }
+
+                matchRoom.innerHTML = `
+                    <div id="match-room-container">
+                        <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-800/80 backdrop-blur-sm p-3 rounded-lg border border-gray-700 mb-6">
+                            <h2 class="text-xl font-bold text-cyan-400">Ruang ${data.matchType.toUpperCase()}</h2>
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400">Kode:</span>
+                                <input type="text" id="match-id-display" readonly value="${currentMatchId}" class="bg-gray-700 text-lime-400 font-mono p-1 rounded w-32 text-center">
+                                <button id="copy-match-id-btn" class="px-2 py-1 bg-gray-600 rounded hover:bg-gray-500"><i class="fa-solid fa-copy"></i></button>
+                            </div>
+                        </div>
+                        <div id="player-progress-container" class="flex flex-col gap-3 mb-6">
+                            ${Object.keys(data.players).map(pid => renderPlayerProgress(pid, data.players[pid], data.hostId)).join('')}
+                        </div>
+                        ${gameAreaHTML}
+                        <div id="match-controls" class="flex justify-center items-center gap-4 mt-6">
+                            ${controlsHTML}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('copy-match-id-btn').addEventListener('click', () => {
+                    const matchIdInput = document.getElementById('match-id-display');
+                    matchIdInput.select();
+                    document.execCommand('copy');
+                    showToast('Kode pertandingan disalin!');
+                });
+                document.getElementById('leave-match-btn').addEventListener('click', () => leaveMatch(false));
+                if (isHost && data.status === 'waiting') {
+                    document.getElementById('start-match-btn').addEventListener('click', startMatch);
+                }
+            }
+            
+            function renderPlayerProgress(pid, player, hostId) {
+                const isMe = pid === myPlayerId;
+                const isHost = pid === hostId;
+                const devTagHTML = player.isDeveloper ? `<span class="dev-tag font-bold px-2 py-0.5 rounded-md text-xs ml-2">Developer</span>` : '';
+                return `
+                    <div class="p-3 rounded-lg ${isMe ? 'bg-cyan-900/50 border border-cyan-500' : 'bg-gray-700/50'}">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold flex items-center ${isMe ? 'text-lime-400' : 'text-white'}">${player.name} ${isMe ? '(Anda)' : ''} ${isHost ? '<i class="fa-solid fa-crown text-yellow-400 ml-2" title="Host"></i>' : ''} ${devTagHTML} ${player.finished ? '<i class="fa-solid fa-check-circle text-green-400 ml-2"></i>' : ''}</span>
+                            <span class="font-bold text-white">${player.score} ${onlineState.matchType === 'wpm' ? 'WPM' : 'CPS'}</span>
+                        </div>
+                        <div class="w-full bg-gray-600 rounded-full h-4"><div class="bg-gradient-to-r from-cyan-500 to-lime-400 h-4 rounded-full text-xs text-right text-black font-bold pr-2 flex items-center justify-end transition-all duration-300" style="width: ${player.progress}%">${Math.round(player.progress)}%</div></div>
+                    </div>
+                `;
+            }
+
+            async function startMatch() {
+                const { db, doc, updateDoc } = window.firebase;
+                // Set status to 'starting' to trigger countdown for everyone
+                await updateDoc(doc(db, "matches", currentMatchId), { status: "starting" });
+            }
+            
+            function showResults(data) {
+                if (unsubscribeFromMatch) {
+                    unsubscribeFromMatch();
+                    unsubscribeFromMatch = null;
+                }
+                const resultsList = document.getElementById('results-list');
+                const playersArray = Object.entries(data.players).map(([id, player]) => ({...player, id}));
+                playersArray.sort((a, b) => b.score - a.score);
+                
+                resultsList.innerHTML = playersArray.map((p, index) => {
+                    const devTagHTML = p.isDeveloper ? `<span class="dev-tag font-bold px-2 py-0.5 rounded-md text-xs ml-2">Developer</span>` : '';
+                    return `
+                    <div class="flex items-center justify-between p-3 rounded ${index === 0 ? 'bg-lime-500/20 border border-lime-500' : 'bg-gray-700'}">
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-lg w-6 text-center">${index === 0 ? '<i class="fa-solid fa-trophy text-yellow-400"></i>' : index + 1}</span>
+                            <span class="font-semibold flex items-center">${p.name} ${devTagHTML}</span>
+                        </div>
+                        <span class="font-bold text-lg text-lime-400">${p.score} ${data.matchType.toUpperCase()}</span>
+                    </div>
+                `}).join('');
+                
+                switchView('resultsModal');
+            }
+
+            backToLobbyBtn.addEventListener('click', () => {
+                switchView('resultsModal');
+                leaveMatch(true);
+            });
+
+            // ONLINE WPM GAME LOGIC
+            function initializeOnlineWpmGame(data) {
+                const textDisplay = document.getElementById('online-text-display');
+                const inputField = document.getElementById('online-input-field');
+                if (!textDisplay || !inputField) return;
+
+                const text = data.textToType;
+                let charSpans = Array.from(textDisplay.children);
+                if (charSpans.length > 0) {
+                    charSpans[0].classList.add('cursor', 'border-l-2', 'border-lime-400');
+                }
+                
+                let currentIndex = 0, errorCount = 0, startTime = null, testFinished = false;
+
+                async function updateMyProgress(isFinished) {
+                    if (!currentMatchId) return;
+                    const { db, doc, updateDoc } = window.firebase;
+                    const progress = (currentIndex / text.length) * 100;
+                    const elapsedTime = startTime ? (new Date() - startTime) / 1000 : 0;
+                    const correctChars = currentIndex - errorCount;
+                    const wpm = elapsedTime > 0 ? Math.round(((correctChars / 5) / (elapsedTime / 60))) : 0;
+                    
+                    try {
+                        await updateDoc(doc(db, "matches", currentMatchId), {
+                            [`players.${myPlayerId}.score`]: wpm,
+                            [`players.${myPlayerId}.progress`]: progress,
+                            [`players.${myPlayerId}.finished`]: isFinished,
+                        });
+                    } catch (e) { console.log("Gagal update progress, mungkin match sudah selesai.")}
+                }
+
+                function handleInput(e) {
+                    if (testFinished || currentIndex >= text.length) return;
+                    if (!startTime) startTime = new Date();
+                    
+                    const typedChar = e.target.value.slice(-1);
+                    e.target.value = '';
+                    const expectedChar = text[currentIndex];
+                    const currentSpan = charSpans[currentIndex];
+
+                    if (typedChar !== expectedChar) {
+                        if (!currentSpan.classList.contains('char-incorrect')) {
+                            errorCount++;
+                            currentSpan.classList.add('char-incorrect');
+                        }
+                        return;
+                    }
+                    
+                    currentSpan.className = 'char-span char-correct';
+                    currentSpan.classList.remove('cursor', 'border-l-2', 'border-lime-400');
+                    currentIndex++;
+                    
+                    if (currentIndex < text.length) {
+                        charSpans[currentIndex].classList.add('cursor', 'border-l-2', 'border-lime-400');
+                    } else {
+                        testFinished = true;
+                        inputField.blur();
+                        updateMyProgress(true);
+                        return;
+                    }
+                    updateMyProgress(false);
+                }
+                
+                function handleKeydown(e) {
+                    if (testFinished) return;
+                    if (e.key === 'Backspace' && currentIndex > 0) {
+                        e.preventDefault();
+                        if (currentIndex < text.length) {
+                            charSpans[currentIndex].classList.remove('cursor', 'border-l-2', 'border-lime-400');
+                        }
+                        currentIndex--;
+                        charSpans[currentIndex].className = 'char-span';
+                        charSpans[currentIndex].classList.add('cursor', 'border-l-2', 'border-lime-400');
+                    }
+                }
+                
+                inputField.addEventListener('input', handleInput);
+                inputField.addEventListener('keydown', handleKeydown);
+                inputField.focus();
+            }
+            
+            // ONLINE CPS GAME LOGIC
+            function initializeOnlineCpsGame(data) {
+                const clickArea = document.getElementById('online-click-area');
+                const timerDisplay = document.getElementById('online-cps-timer-display');
+                if (!clickArea || !timerDisplay) return;
+
+                let clickCount = 0, testFinished = false;
+                let timeLeft = data.cpsDuration;
+                
+                if (localCpsTimer) clearInterval(localCpsTimer);
+                localCpsTimer = setInterval(() => {
+                    timeLeft--;
+                    timerDisplay.textContent = `${timeLeft}s`;
+                    if (timeLeft <= 0) {
+                        clearInterval(localCpsTimer);
+                        testFinished = true;
+                        clickArea.style.cursor = 'not-allowed';
+                        updateMyProgress(true);
+                    }
+                }, 1000);
+                
+                async function updateMyProgress(isFinished) {
+                    if (!currentMatchId) return;
+                    const { db, doc, updateDoc } = window.firebase;
+                    const elapsedTime = data.cpsDuration - timeLeft;
+                    const cps = elapsedTime > 0 ? clickCount / elapsedTime : 0;
+                    try {
+                        await updateDoc(doc(db, "matches", currentMatchId), {
+                            [`players.${myPlayerId}.score`]: parseFloat(cps.toFixed(2)),
+                            [`players.${myPlayerId}.progress`]: isFinished ? 100 : (elapsedTime / data.cpsDuration) * 100,
+                            [`players.${myPlayerId}.finished`]: isFinished,
+                        });
+                    } catch (e) { console.log("Gagal update progress, mungkin match sudah selesai.")}
+                }
+                
+                clickArea.addEventListener('click', (e) => {
+                    if(testFinished) return;
+                    clickCount++;
+                    updateMyProgress(false);
+                     // Ripple effect
+                    const ripple = document.createElement('span');
+                    ripple.className = 'ripple';
+                    clickArea.appendChild(ripple);
+                    const rect = clickArea.getBoundingClientRect();
+                    ripple.style.left = `${e.clientX - rect.left}px`;
+                    ripple.style.top = `${e.clientY - rect.top}px`;
+                    ripple.onanimationend = () => ripple.remove();
+                });
+            }
+            
+            // ATTACH LOBBY LISTENERS
+            createWpmMatchBtn.addEventListener('click', () => createMatch('wpm'));
+            createCpsMatchBtn.addEventListener('click', () => createMatch('cps'));
+            joinRandomMatchBtn.addEventListener('click', joinRandomMatch);
+            joinMatchBtn.addEventListener('click', () => joinMatch(joinMatchInput.value.trim()));
+            joinMatchInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') joinMatch(joinMatchInput.value.trim());
+            });
+        });
+    </script>
+</body>
+</html>
