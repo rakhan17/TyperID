@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TyperID Final v4 - The Ultimate Training Hub</title>
+    <title>TyperID Final v5 - The Ultimate Training Hub</title>
     
     <!-- Memuat Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,7 +21,7 @@
         body { font-family: 'Inter', sans-serif; overflow: hidden; }
         #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
         .tab-nav { transition: opacity 0.3s, visibility 0.3s; }
-        .tab-nav.hidden { opacity: 0; visibility: hidden; }
+        .tab-nav.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         .tab.active, .mode-btn.active { background-color: #06b6d4; color: white; box-shadow: 0 0 15px rgba(6, 182, 212, 0.5); }
         .tab:not(.active) { background-color: #374151; }
         .mode-btn:not(.active) { background-color: #4b5563; }
@@ -76,7 +76,7 @@
             background-color: rgba(17, 24, 39, 0.8);
             backdrop-filter: blur(5px);
             z-index: 10000;
-            display: none; /* Changed to none */
+            display: none;
             justify-content: center;
             align-items: center;
         }
@@ -107,7 +107,7 @@
                 <svg width="300" height="70" viewBox="0 0 300 70" class="inline-block">
                     <text x="0" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="white">Typer</text>
                     <text x="175" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="#22d3ee">ID</text>
-                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v4</text>
+                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v5</text>
                 </svg>
             </h1>
             <p class="text-slate-400 mt-1">The Ultimate Typing & CPS Training Hub</p>
@@ -155,7 +155,7 @@
                         </div>
                     </div>
 
-                    <!-- MATCH ROOM VIEW -->
+                    <!-- MATCH ROOM VIEW (Skeleton) -->
                     <div id="match-room-view" class="view flex-col gap-6">
                         <!-- Konten Ruang Match akan di-generate oleh JS -->
                     </div>
@@ -437,7 +437,7 @@
             function initializeSoloCpsMode(){const t=document.getElementById("solo-click-area"),e=document.getElementById("solo-click-area-text"),n=document.getElementById("solo-cps"),o=document.getElementById("solo-clicks"),a=document.getElementById("solo-cps-timer"),i=document.getElementById("solo-restart-cps-btn");let s,l=5,c=0,r=!1;function d(){clearInterval(s),l=5,c=0,r=!1,n.textContent="0",o.textContent="0",a.textContent=`${l}s`,e.textContent="Klik di sini untuk memulai!",t.style.cursor="pointer"}function u(){if(r)return;r=!0,c=0,o.textContent="0",e.textContent="Klik!",s=setInterval(()=>{l--,a.textContent=`${l}s`;const t=c/(5-l);n.textContent=isNaN(t)?"0":t.toFixed(2),l<=0&&m()},1e3)}function m(){clearInterval(s),r=!1;const t=(c/5).toFixed(2);n.textContent=t,e.textContent=`Selesai! CPS Anda: ${t}`,t.style.cursor="default"}t.addEventListener("click",n=>{!r&&l>0&&u(),r&&(c++,o.textContent=c,function(e){const n=document.createElement("span");n.className="ripple",t.appendChild(n);const o=t.getBoundingClientRect();n.style.left=`${e.clientX-o.left}px`,n.style.top=`${e.clientY-o.top}px`,n.onanimationend=()=>n.remove()}(n))}),i.addEventListener("click",d),d()}
 
             // ==================================================
-            // ONLINE MODE LOGIC
+            // ONLINE MODE LOGIC (REFACTORED)
             // ==================================================
             async function createMatch(matchType) {
                 const { db, collection, addDoc, serverTimestamp } = window.firebase;
@@ -448,7 +448,7 @@
                         matchType,
                         textToType,
                         cpsDuration: 5,
-                        status: "waiting",
+                        status: "waiting", // waiting, starting, playing, finished
                         createdAt: serverTimestamp(),
                         hostId: myPlayerId,
                         players: {
@@ -514,6 +514,7 @@
                 window.location.hash = `match=${matchId}`;
                 switchView('onlineTester');
                 switchView('matchRoom');
+                renderMatchRoomSkeleton(); // Render skeleton first
                 listenToMatch(matchId);
             }
 
@@ -536,7 +537,7 @@
                     
                     if (views.resultsModal.classList.contains('active')) return;
 
-                    renderMatchRoomUI(matchData);
+                    updateMatchRoomUI(matchData); // Update UI with new data
 
                     if (matchData.status === 'starting' && !localGameStarted) {
                         showCountdown();
@@ -611,7 +612,6 @@
                         clearInterval(interval);
                         countdownOverlay.style.display = 'none';
                         countdownText.style.fontSize = '10rem'; // Reset font size
-                        // Only host updates the status to 'playing'
                         if (onlineState.hostId === myPlayerId) {
                             const { db, doc, updateDoc } = window.firebase;
                             await updateDoc(doc(db, "matches", currentMatchId), { status: "playing" });
@@ -619,61 +619,62 @@
                     }
                 }, 1000);
             }
-
-            function renderMatchRoomUI(data) {
-                const matchRoom = views.matchRoom;
-                let gameAreaHTML = '';
-                const isGameActive = data.status === 'playing' || data.status === 'starting';
-
-                if (data.matchType === 'wpm') {
-                    const textWithSpans = data.textToType.split('').map(char => `<span class="char-span">${char}</span>`).join('');
-                    gameAreaHTML = `
-                        <div id="online-text-container" class="bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg shadow-lg relative min-h-[140px] flex items-center border border-gray-700">
-                            <p id="online-text-display" class="text-2xl leading-relaxed tracking-wide text-slate-400 select-none">${isGameActive ? textWithSpans : 'Menunggu host memulai pertandingan...'}</p>
-                            <input id="online-input-field" type="text" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-default" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" ${!isGameActive ? 'disabled' : ''}>
-                        </div>
-                    `;
-                } else { // CPS
-                    gameAreaHTML = `
-                        <div id="online-click-area" class="w-full h-64 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg flex flex-col items-center justify-center text-center border-2 border-dashed border-cyan-500/50 relative overflow-hidden ${isGameActive ? 'cursor-pointer hover:border-cyan-500' : 'cursor-not-allowed'}">
-                            <p id="online-click-area-text" class="text-3xl font-bold text-white">${isGameActive ? 'KLIK SECEPATNYA!' : 'Menunggu host memulai pertandingan...'}</p>
-                            <p id="online-cps-timer-display" class="text-5xl font-black text-lime-400 mt-4">${data.cpsDuration}s</p>
-                        </div>
-                    `;
-                }
-
-                const isHost = data.hostId === myPlayerId;
-                let controlsHTML = `<button id="leave-match-btn" class="px-6 py-3 bg-red-500 text-white font-bold rounded-md hover:bg-red-600">Keluar</button>`;
-                if (isHost && data.status === 'waiting') {
-                    controlsHTML = `<button id="start-match-btn" class="px-6 py-3 bg-lime-500 text-gray-900 font-bold rounded-md hover:bg-lime-600">Mulai Pertandingan</button>` + controlsHTML;
-                }
-
-                matchRoom.innerHTML = `
+            
+            // --- ONLINE UI RENDERING REFACTORED ---
+            function renderMatchRoomSkeleton() {
+                views.matchRoom.innerHTML = `
                     <div id="match-room-container">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-800/80 backdrop-blur-sm p-3 rounded-lg border border-gray-700 mb-6">
-                            <h2 class="text-xl font-bold text-cyan-400">Ruang ${data.matchType.toUpperCase()}</h2>
+                            <h2 id="match-room-title" class="text-xl font-bold text-cyan-400"></h2>
                             <div class="flex items-center gap-2">
                                 <span class="text-slate-400">Kode:</span>
-                                <input type="text" id="match-id-display" readonly value="${currentMatchId}" class="bg-gray-700 text-lime-400 font-mono p-1 rounded w-32 text-center">
+                                <input type="text" id="match-id-display" readonly class="bg-gray-700 text-lime-400 font-mono p-1 rounded w-32 text-center">
                                 <button id="copy-match-id-btn" class="px-2 py-1 bg-gray-600 rounded hover:bg-gray-500"><i class="fa-solid fa-copy"></i></button>
                             </div>
                         </div>
-                        <div id="player-progress-container" class="flex flex-col gap-3 mb-6">
-                            ${Object.keys(data.players).map(pid => renderPlayerProgress(pid, data.players[pid], data.hostId)).join('')}
-                        </div>
-                        ${gameAreaHTML}
-                        <div id="match-controls" class="flex justify-center items-center gap-4 mt-6">
-                            ${controlsHTML}
-                        </div>
+                        <div id="player-progress-container" class="flex flex-col gap-3 mb-6"></div>
+                        <div id="game-area-container"></div>
+                        <div id="match-controls" class="flex justify-center items-center gap-4 mt-6"></div>
                     </div>
                 `;
-                
-                document.getElementById('copy-match-id-btn').addEventListener('click', () => {
+                 document.getElementById('copy-match-id-btn').addEventListener('click', () => {
                     const matchIdInput = document.getElementById('match-id-display');
                     matchIdInput.select();
                     document.execCommand('copy');
                     showToast('Kode pertandingan disalin!');
                 });
+            }
+
+            function updateMatchRoomUI(data) {
+                // Update static elements
+                document.getElementById('match-room-title').textContent = `Ruang ${data.matchType.toUpperCase()}`;
+                document.getElementById('match-id-display').value = currentMatchId;
+
+                // Update player list
+                const progressContainer = document.getElementById('player-progress-container');
+                progressContainer.innerHTML = Object.keys(data.players).map(pid => renderPlayerProgress(pid, data.players[pid], data.hostId)).join('');
+
+                // Update game area (only if it's not started yet)
+                if (!localGameStarted) {
+                    const gameAreaContainer = document.getElementById('game-area-container');
+                    let gameAreaHTML = '';
+                    if (data.matchType === 'wpm') {
+                        gameAreaHTML = `<div id="online-text-container" class="bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg shadow-lg relative min-h-[140px] flex items-center border border-gray-700"><p id="online-text-display" class="text-2xl leading-relaxed tracking-wide text-slate-400 select-none">Menunggu host memulai pertandingan...</p><input id="online-input-field" type="text" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-default" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" disabled></div>`;
+                    } else {
+                        gameAreaHTML = `<div id="online-click-area" class="w-full h-64 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg flex flex-col items-center justify-center text-center border-2 border-dashed border-cyan-500/50 relative overflow-hidden cursor-not-allowed"><p id="online-click-area-text" class="text-3xl font-bold text-white">Menunggu host memulai pertandingan...</p><p id="online-cps-timer-display" class="text-5xl font-black text-lime-400 mt-4">${data.cpsDuration}s</p></div>`;
+                    }
+                    gameAreaContainer.innerHTML = gameAreaHTML;
+                }
+
+                // Update controls
+                const controlsContainer = document.getElementById('match-controls');
+                const isHost = data.hostId === myPlayerId;
+                let controlsHTML = `<button id="leave-match-btn" class="px-6 py-3 bg-red-500 text-white font-bold rounded-md hover:bg-red-600">Keluar</button>`;
+                if (isHost && data.status === 'waiting') {
+                    controlsHTML = `<button id="start-match-btn" class="px-6 py-3 bg-lime-500 text-gray-900 font-bold rounded-md hover:bg-lime-600">Mulai Pertandingan</button>` + controlsHTML;
+                }
+                controlsContainer.innerHTML = controlsHTML;
+                
                 document.getElementById('leave-match-btn').addEventListener('click', () => leaveMatch(false));
                 if (isHost && data.status === 'waiting') {
                     document.getElementById('start-match-btn').addEventListener('click', startMatch);
@@ -697,7 +698,6 @@
 
             async function startMatch() {
                 const { db, doc, updateDoc } = window.firebase;
-                // Set status to 'starting' to trigger countdown for everyone
                 await updateDoc(doc(db, "matches", currentMatchId), { status: "starting" });
             }
             
@@ -712,15 +712,8 @@
                 
                 resultsList.innerHTML = playersArray.map((p, index) => {
                     const devTagHTML = p.isDeveloper ? `<span class="dev-tag font-bold px-2 py-0.5 rounded-md text-xs ml-2">Developer</span>` : '';
-                    return `
-                    <div class="flex items-center justify-between p-3 rounded ${index === 0 ? 'bg-lime-500/20 border border-lime-500' : 'bg-gray-700'}">
-                        <div class="flex items-center gap-3">
-                            <span class="font-bold text-lg w-6 text-center">${index === 0 ? '<i class="fa-solid fa-trophy text-yellow-400"></i>' : index + 1}</span>
-                            <span class="font-semibold flex items-center">${p.name} ${devTagHTML}</span>
-                        </div>
-                        <span class="font-bold text-lg text-lime-400">${p.score} ${data.matchType.toUpperCase()}</span>
-                    </div>
-                `}).join('');
+                    return `<div class="flex items-center justify-between p-3 rounded ${index === 0 ? 'bg-lime-500/20 border border-lime-500' : 'bg-gray-700'}"><div class="flex items-center gap-3"><span class="font-bold text-lg w-6 text-center">${index === 0 ? '<i class="fa-solid fa-trophy text-yellow-400"></i>' : index + 1}</span><span class="font-semibold flex items-center">${p.name} ${devTagHTML}</span></div><span class="font-bold text-lg text-lime-400">${p.score} ${data.matchType.toUpperCase()}</span></div>`
+                }).join('');
                 
                 switchView('resultsModal');
             }
@@ -732,12 +725,15 @@
 
             // ONLINE WPM GAME LOGIC
             function initializeOnlineWpmGame(data) {
-                const textDisplay = document.getElementById('online-text-display');
+                const textContainer = document.getElementById('online-text-display');
                 const inputField = document.getElementById('online-input-field');
-                if (!textDisplay || !inputField) return;
-
+                if (!textContainer || !inputField) return;
+                
                 const text = data.textToType;
-                let charSpans = Array.from(textDisplay.children);
+                textContainer.innerHTML = text.split('').map(char => `<span class="char-span">${char}</span>`).join('');
+                inputField.disabled = false;
+
+                let charSpans = Array.from(textContainer.children);
                 if (charSpans.length > 0) {
                     charSpans[0].classList.add('cursor', 'border-l-2', 'border-lime-400');
                 }
@@ -815,7 +811,11 @@
             function initializeOnlineCpsGame(data) {
                 const clickArea = document.getElementById('online-click-area');
                 const timerDisplay = document.getElementById('online-cps-timer-display');
+                const clickAreaText = document.getElementById('online-click-area-text');
                 if (!clickArea || !timerDisplay) return;
+
+                clickArea.classList.remove('cursor-not-allowed');
+                clickAreaText.textContent = 'KLIK SECEPATNYA!';
 
                 let clickCount = 0, testFinished = false;
                 let timeLeft = data.cpsDuration;
