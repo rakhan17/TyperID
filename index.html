@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TyperID v9 - The Ultimate Training Hub</title>
+    <title>TyperID Final v10 - The Ultimate Training Hub</title>
     
     <!-- Memuat Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,8 +22,8 @@
         #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
         .tab-nav { transition: opacity 0.3s, visibility 0.3s; }
         .tab-nav.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-        .tab.active, .mode-btn.active { background-color: #06b6d4; color: white; box-shadow: 0 0 15px rgba(6, 182, 212, 0.5); }
-        .tab:not(.active) { background-color: #374151; }
+        .tab.active, .mode-btn.active, .modal-tab.active { background-color: #06b6d4; color: white; box-shadow: 0 0 15px rgba(6, 182, 212, 0.5); }
+        .tab:not(.active), .modal-tab:not(.active) { background-color: #374151; }
         .mode-btn:not(.active) { background-color: #4b5563; }
         .cursor { animation: blink 1s infinite; }
         @keyframes blink { 50% { border-left-color: #a3e635; } }
@@ -92,10 +92,15 @@
     <div id="users-modal" class="overlay">
         <div class="modal-card flex flex-col h-full max-h-[80vh]">
             <div class="flex justify-between items-center p-4 border-b border-gray-600">
-                <h2 class="text-xl font-bold text-cyan-400">Pengguna Online (<span id="online-user-count">0</span>)</h2>
+                <h2 class="text-xl font-bold text-cyan-400">Panel Pengguna</h2>
                 <button id="close-users-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
+            <div class="flex p-1 bg-gray-900/50">
+                <button id="online-users-tab" class="modal-tab w-full py-2 rounded-md">Online (<span id="online-user-count">0</span>)</button>
+                <button id="banned-users-tab" class="modal-tab w-full py-2 rounded-md">Banned (<span id="banned-user-count">0</span>)</button>
+            </div>
             <div id="users-list-container" class="p-4 overflow-y-auto flex-grow"></div>
+            <div id="banned-list-container" class="p-4 overflow-y-auto flex-grow hidden"></div>
             <div id="users-modal-permission-denied" class="p-8 text-center text-slate-400 hidden">
                 Maaf kamu bukan Admin atau Developer, jadi kamu tidak bisa mengakses bagian ini. Kamu bisa minta tolong ke Rakhan jika mau menjadi Admin atau Developer.
             </div>
@@ -120,7 +125,7 @@
                 <svg width="300" height="70" viewBox="0 0 300 70" class="inline-block">
                     <text x="0" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="white">Typer</text>
                     <text x="175" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="#22d3ee">ID</text>
-                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v9</text>
+                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v10</text>
                 </svg>
             </h1>
             <p class="text-slate-400 mt-1">The Ultimate Typing & CPS Training Hub</p>
@@ -263,6 +268,7 @@
             let currentMatchId = null;
             let unsubscribeFromMatch = null;
             let unsubscribeFromUsers = null;
+            let unsubscribeFromBanned = null;
             let unsubscribeFromMessages = null;
             let unsubscribeFromBan = null;
             let onlineState = {};
@@ -320,18 +326,14 @@
             // ==================================================
             // VIEW MANAGEMENT & INITIALIZATION
             // ==================================================
-            function switchView(viewName) {
-                const mainViews = ['nameEntry', 'mainApp'];
-                const tabViews = ['soloTester', 'onlineTester'];
-                const onlineSubViews = ['lobby', 'matchRoom'];
-
-                if (mainViews.includes(viewName)) {
-                    mainViews.forEach(v => { if (views[v]) views[v].classList.toggle('active', v === viewName); });
-                } else if (tabViews.includes(viewName)) {
-                    tabViews.forEach(v => { if (views[v]) views[v].classList.toggle('active', v === viewName); });
-                } else if (onlineSubViews.includes(viewName)) {
-                    onlineSubViews.forEach(v => { if (views[v]) views[v].classList.toggle('active', v === viewName); });
-                } else { // For modals/overlays
+            function switchView(viewName, group = null) {
+                const allViews = Object.values(views);
+                if (group) {
+                    group.forEach(v => {
+                        if (views[v]) views[v].classList.toggle('active', v === viewName);
+                    });
+                } else {
+                    allViews.forEach(v => v.classList.remove('active'));
                     if (views[viewName]) views[viewName].classList.add('active');
                 }
             }
@@ -372,7 +374,7 @@
                 listenForMessages();
                 listenForBan();
 
-                switchView('mainApp');
+                switchView('mainApp', ['nameEntry', 'mainApp']);
                 toggleMainTabs(true);
                 const matchIdFromUrl = window.location.hash.substring(7);
                 if (matchIdFromUrl) { onlineTabBtn.click(); joinMatch(matchIdFromUrl); } 
@@ -446,7 +448,6 @@
                             isAdmin,
                             lastSeen: serverTimestamp()
                         }, { merge: true });
-                        console.log("Presence updated.");
                     }
                 };
                 updatePresence();
@@ -499,11 +500,11 @@
             function openUsersModal() {
                 if (!isAdmin && !isDeveloper) {
                     document.getElementById('users-list-container').style.display = 'none';
+                    document.getElementById('banned-list-container').style.display = 'none';
                     document.getElementById('users-modal-permission-denied').style.display = 'block';
                 } else {
-                    document.getElementById('users-list-container').style.display = 'block';
                     document.getElementById('users-modal-permission-denied').style.display = 'none';
-                    subscribeToUsersList();
+                    document.getElementById('online-users-tab').click(); // Default to online tab
                 }
                 showOverlay('users-modal', true);
             }
@@ -547,18 +548,71 @@
                     userListContainer.innerHTML = usersHTML || '<p class="text-slate-400 text-center">Tidak ada pengguna online lain.</p>';
                 });
             }
+            
+            function subscribeToBannedList() {
+                const { db, collection, onSnapshot } = window.firebase;
+                const bannedListContainer = document.getElementById('banned-list-container');
+                const bannedUserCount = document.getElementById('banned-user-count');
+                
+                if (unsubscribeFromBanned) unsubscribeFromBanned();
+                unsubscribeFromBanned = onSnapshot(collection(db, "bannedUsers"), (snapshot) => {
+                    let bannedHTML = '';
+                    bannedUserCount.textContent = snapshot.size;
+                    snapshot.forEach(doc => {
+                        const bannedUser = doc.data();
+                        const userId = doc.id;
+                        
+                        let actionsHTML = '';
+                        if(isDeveloper) {
+                             actionsHTML += `<button data-userid="${userId}" class="unban-btn ml-auto bg-green-600 px-3 py-1 rounded-md text-xs">Lepas Ban</button>`;
+                        }
+
+                        bannedHTML += `<div class="flex items-center p-2 border-b border-gray-600">
+                            <span>ID: ${userId.substring(0,10)}...</span>
+                            <span class="ml-2 text-xs text-gray-400">(oleh ${bannedUser.bannedBy})</span>
+                            <div class="ml-auto flex gap-2">${actionsHTML}</div>
+                        </div>`;
+                    });
+                    bannedListContainer.innerHTML = bannedHTML || '<p class="text-slate-400 text-center">Tidak ada pengguna yang dibanned.</p>';
+                });
+            }
 
             document.getElementById('close-users-modal-btn').addEventListener('click', () => {
                 if (unsubscribeFromUsers) { unsubscribeFromUsers(); unsubscribeFromUsers = null; }
+                if (unsubscribeFromBanned) { unsubscribeFromBanned(); unsubscribeFromBanned = null; }
                 showOverlay('users-modal', false);
             });
             
+            document.getElementById('online-users-tab').addEventListener('click', (e) => {
+                document.getElementById('banned-users-tab').classList.remove('active');
+                e.target.classList.add('active');
+                document.getElementById('users-list-container').classList.remove('hidden');
+                document.getElementById('banned-list-container').classList.add('hidden');
+                if (unsubscribeFromBanned) { unsubscribeFromBanned(); unsubscribeFromBanned = null; }
+                subscribeToUsersList();
+            });
+
+            document.getElementById('banned-users-tab').addEventListener('click', (e) => {
+                document.getElementById('online-users-tab').classList.remove('active');
+                e.target.classList.add('active');
+                document.getElementById('users-list-container').classList.add('hidden');
+                document.getElementById('banned-list-container').classList.remove('hidden');
+                if (unsubscribeFromUsers) { unsubscribeFromUsers(); unsubscribeFromUsers = null; }
+                subscribeToBannedList();
+            });
+
             document.addEventListener('click', (e) => {
                 if (e.target.classList.contains('ban-btn')) {
                     const userId = e.target.dataset.userid;
                     const username = e.target.dataset.username;
                     if (confirm(`Apakah Anda yakin ingin membanned ${username}?`)) {
-                        banUser(userId);
+                        banUser(userId, username);
+                    }
+                }
+                 if (e.target.classList.contains('unban-btn')) {
+                    const userId = e.target.dataset.userid;
+                    if (confirm(`Apakah Anda yakin ingin melepas ban untuk pengguna ini?`)) {
+                        unbanUser(userId);
                     }
                 }
                 if (e.target.classList.contains('message-btn')) {
@@ -568,10 +622,20 @@
                 }
             });
 
-            async function banUser(userId) {
+            async function banUser(userId, username) {
                 const { db, doc, setDoc } = window.firebase;
-                await setDoc(doc(db, "bannedUsers", userId), { bannedBy: myPlayerName, timestamp: new Date() });
-                showToast(`Pengguna telah dibanned.`, 'info');
+                await setDoc(doc(db, "bannedUsers", userId), { 
+                    bannedBy: myPlayerName, 
+                    username: username, // Save username for display
+                    timestamp: new Date() 
+                });
+                showToast(`Pengguna ${username} telah dibanned.`, 'info');
+            }
+            
+            async function unbanUser(userId) {
+                const { db, doc, deleteDoc } = window.firebase;
+                await deleteDoc(doc(db, "bannedUsers", userId));
+                showToast(`Ban untuk pengguna telah dilepas.`, 'info');
             }
 
             function openSendMessageModal(userId, username) {
