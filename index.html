@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TyperID v14 - The Ultimate Training Hub</title>
+    <title>TyperID v14.1 - The Ultimate Training Hub</title>
     
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌨️</text></svg>">
@@ -89,6 +89,32 @@
         .chat-bubble.dev-bubble { background: linear-gradient(135deg, #a3e635, #22d3ee); color: #111827; border-bottom-left-radius: 0.25rem; transform: scale(1.02); box-shadow: 0 0 10px #22d3ee80; }
         .chat-bubble.my-dev-bubble { background: linear-gradient(135deg, #a3e635, #22d3ee); color: #111827; border-bottom-right-radius: 0.25rem; transform: scale(1.02); box-shadow: 0 0 10px #22d3ee80; }
         .reply-content { background-color: rgba(0,0,0,0.2); padding: 0.25rem 0.5rem; margin-bottom: 0.25rem; border-left: 3px solid #06b6d4; border-radius: 4px; font-size: 0.8rem; opacity: 0.8; }
+    
+        /* Developer Cheat Button */
+        #dev-cheat-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10001;
+            padding: 8px 16px;
+            background: linear-gradient(90deg, #a3e635, #22d3ee);
+            color: #111827;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.6);
+            transition: all 0.3s ease;
+        }
+        #dev-cheat-btn:hover {
+            transform: scale(1.05);
+        }
+        #dev-cheat-btn:disabled {
+            background: #4b5563;
+            color: #9ca3af;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-slate-300 flex items-center justify-center min-h-screen p-4 antialiased">
@@ -135,7 +161,7 @@
                 <svg width="300" height="70" viewBox="0 0 300 70" class="inline-block">
                     <text x="0" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="white">Typer</text>
                     <text x="175" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="#22d3ee">ID</text>
-                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v14</text>
+                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v14.1</text>
                 </svg>
             </h1>
             <p class="text-slate-400 mt-1">The Ultimate Typing & CPS Training Hub</p>
@@ -309,15 +335,14 @@
             let unsubscribeFromBanned = null;
             let unsubscribeFromMessages = null;
             let unsubscribeFromBan = null;
-            let unsubscribeFromGlobalChat = null;
             let onlineState = {};
             let localCpsTimer = null;
             let localGameStarted = false;
             let presenceInterval = null;
             let activeReply = null;
-            let chatRefreshInterval = null;
             let chatRefreshCountdownInterval = null;
             let selectedCpsDuration = 5;
+            let devCheatInterval = null; // For developer cheat
 
             const textSamples = {
                 id: [
@@ -966,19 +991,20 @@
             }
 
             function startGlobalChatSystem() {
-                if (chatRefreshInterval) clearInterval(chatRefreshInterval);
                 if (chatRefreshCountdownInterval) clearInterval(chatRefreshCountdownInterval);
 
                 listenToGlobalChat(); // Initial fetch
                 
-                chatRefreshInterval = setInterval(listenToGlobalChat, 180000); // Refresh every 3 minutes
-
                 let countdown = 180;
                 const timerEl = document.getElementById('chat-refresh-timer');
                 timerEl.textContent = countdown;
+
                 chatRefreshCountdownInterval = setInterval(() => {
                     countdown--;
-                    if (countdown < 0) countdown = 179; // Reset to 179 to account for the 1s delay
+                    if (countdown <= 0) {
+                        countdown = 180; // Reset countdown
+                        listenToGlobalChat(); // Refresh chat
+                    }
                     timerEl.textContent = countdown;
                 }, 1000);
             }
@@ -1020,30 +1046,38 @@
                     messageData.replyTo = activeReply;
                 }
 
-                await addDoc(collection(db, "globalChat"), messageData);
-                messageInput.value = '';
-                cancelReply();
-                listenToGlobalChat(); // Manually refresh after sending
+                try {
+                    await addDoc(collection(db, "globalChat"), messageData);
+                    messageInput.value = '';
+                    cancelReply();
+                    listenToGlobalChat(); // Manually refresh after sending
+                } catch (error) {
+                    console.error("Error sending chat message:", error);
+                    showToast("Gagal mengirim pesan.", "error");
+                }
             }
 
             function listenToGlobalChat() {
-                const { db, collection, query, orderBy, limit, onSnapshot, getDocs } = window.firebase;
+                const { db, collection, query, orderBy, limit, getDocs } = window.firebase;
                 const messagesList = document.getElementById('chat-messages-list');
                 const q = query(collection(db, "globalChat"), orderBy("timestamp", "desc"), limit(50));
 
-                // Use getDocs for manual refresh to avoid multiple listeners
                 getDocs(q).then(snapshot => {
-                    const currentScroll = messagesList.parentElement.scrollHeight - messagesList.parentElement.scrollTop;
-                    messagesList.innerHTML = '';
+                    const shouldScroll = messagesList.parentElement.scrollTop + messagesList.parentElement.clientHeight >= messagesList.parentElement.scrollHeight - 50;
+                    
+                    messagesList.innerHTML = ''; // Clear current messages
+                    
                     snapshot.docs.reverse().forEach(doc => {
                         const message = doc.data();
                         const messageId = doc.id;
                         messagesList.appendChild(renderChatMessage(message, messageId));
                     });
-                    // Scroll to bottom only if user was already at the bottom
-                    if (currentScroll < messagesList.parentElement.clientHeight + 150) {
+                    
+                    if (shouldScroll) {
                          messagesList.parentElement.scrollTop = messagesList.parentElement.scrollHeight;
                     }
+                }).catch(error => {
+                    console.error("Error fetching global chat:", error);
                 });
             }
 
@@ -1179,7 +1213,6 @@
                     }
                     const matchData = doc.data();
                     
-                    // NEW: Check if kicked
                     if (onlineState.players && !matchData.players[myPlayerId] && !localGameStarted) {
                         const hostName = onlineState.players[onlineState.hostId]?.name || 'Host';
                         showToast(`Anda telah dikeluarkan dari room oleh ${hostName}`, 'error');
@@ -1207,7 +1240,7 @@
             async function leaveMatch(isMatchDeleted = false) {
                 if (unsubscribeFromMatch) { unsubscribeFromMatch(); unsubscribeFromMatch = null; }
                 if (currentMatchId && !isMatchDeleted) {
-                    const { db, doc, runTransaction, deleteDoc } = window.firebase;
+                    const { db, doc, runTransaction } = window.firebase;
                     const matchDocRef = doc(db, "matches", currentMatchId);
                     try {
                         await runTransaction(db, async (transaction) => {
@@ -1228,6 +1261,11 @@
             }
 
             function resetOnlineState() {
+                // Cleanup dev cheat button if it exists
+                const cheatBtn = document.getElementById('dev-cheat-btn');
+                if (cheatBtn) cheatBtn.remove();
+                if (devCheatInterval) clearInterval(devCheatInterval);
+
                 currentMatchId = null;
                 onlineState = {};
                 localGameStarted = false;
@@ -1277,12 +1315,11 @@
                 document.getElementById('match-id-display').value = currentMatchId;
                 const progressContainer = document.getElementById('player-progress-container');
                 
-                // Sort player list to prevent reordering
                 const playerIds = Object.keys(data.players);
                 playerIds.sort((a, b) => {
-                    if (a === myPlayerId) return -1; // Always show self on top
+                    if (a === myPlayerId) return -1;
                     if (b === myPlayerId) return 1;
-                    return data.players[a].name.localeCompare(data.players[b].name); // Sort others alphabetically
+                    return data.players[a].name.localeCompare(data.players[b].name);
                 });
 
                 progressContainer.innerHTML = playerIds.map(pid => renderPlayerProgress(pid, data.players[pid], data.hostId, data.matchType, data.status)).join('');
@@ -1346,7 +1383,7 @@
             function renderPlayerProgress(pid, player, hostId, matchType, status) {
                 const isMe = pid === myPlayerId;
                 const isHost = pid === hostId;
-                const isRoomHost = myPlayerId === hostId; // Check if the current client is the host
+                const isRoomHost = myPlayerId === hostId;
                 const devTagHTML = player.isDeveloper ? `<span class="dev-tag role-tag ml-2">Developer</span>` : '';
                 const adminTagHTML = player.isAdmin ? `<span class="admin-tag role-tag ml-2">Admin</span>` : '';
                 const kickBtnHTML = (isRoomHost && !isMe && status === 'waiting') ? `<button data-kick-id="${pid}" data-kick-name="${player.name}" class="kick-btn ml-auto text-red-500 hover:text-red-400 text-xs px-2 py-1 rounded-md"><i class="fa-solid fa-user-slash"></i> Kick</button>` : '';
@@ -1399,6 +1436,11 @@
                 if (unsubscribeFromMatch) { unsubscribeFromMatch(); unsubscribeFromMatch = null; }
                 const { db, doc, deleteDoc } = window.firebase;
                 
+                // Cleanup dev cheat button
+                const cheatBtn = document.getElementById('dev-cheat-btn');
+                if (cheatBtn) cheatBtn.remove();
+                if (devCheatInterval) clearInterval(devCheatInterval);
+
                 const tableContainer = document.getElementById('results-table-container');
                 const playersArray = Object.values(data.players);
                 playersArray.sort((a, b) => b.score - a.score);
@@ -1413,7 +1455,6 @@
                 tableContainer.innerHTML = tableHTML;
                 showOverlay('results-modal', true);
 
-                // Host deletes the match after 15 seconds
                 if (data.hostId === myPlayerId) {
                     setTimeout(() => {
                         deleteDoc(doc(db, "matches", currentMatchId)).catch(err => console.log("Gagal menghapus match, mungkin sudah dihapus."));
@@ -1423,14 +1464,35 @@
 
             backToLobbyBtn.addEventListener('click', () => { 
                 showOverlay('results-modal', false);
-                leaveMatch(true); // Treat it as if match is deleted
+                leaveMatch(true); 
             });
+
+            function createDevCheatButton() {
+                if (!isDeveloper || document.getElementById('dev-cheat-btn')) return;
+                const btn = document.createElement('button');
+                btn.id = 'dev-cheat-btn';
+                btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Aktifkan Cheat';
+                document.body.appendChild(btn);
+                return btn;
+            }
 
             // ONLINE WPM GAME LOGIC
             function initializeOnlineWpmGame(data) {
                 const textContainer = document.getElementById('online-text-display');
                 const inputField = document.getElementById('online-input-field');
                 if (!textContainer || !inputField) return;
+
+                let cheatActive = false;
+                if (isDeveloper) {
+                    const cheatBtn = createDevCheatButton();
+                    cheatBtn.onclick = () => {
+                        cheatActive = true;
+                        cheatBtn.textContent = 'Cheat Aktif';
+                        cheatBtn.disabled = true;
+                        showToast('Cheat WPM diaktifkan!', 'info');
+                    };
+                }
+
                 const text = data.textToType;
                 textContainer.innerHTML = text.split('').map(char => `<span class="char-span">${char}</span>`).join('');
                 inputField.disabled = false;
@@ -1441,12 +1503,13 @@
                 async function finishTest() {
                     if (testFinished) return;
                     testFinished = true;
+                    if (devCheatInterval) clearInterval(devCheatInterval);
                     inputField.blur();
                     inputField.disabled = true;
                     const duration = (new Date() - startTime) / 1000;
-                    const correctChars = currentIndex - errorCount;
-                    const wpm = duration > 0 ? Math.round(((correctChars / 5) / (duration / 60))) : 0;
-                    const accuracy = currentIndex > 0 ? Math.round((correctChars / currentIndex) * 100) : 100;
+                    const correctChars = text.length; // Cheat assumes 100% accuracy
+                    const wpm = cheatActive ? 200 : (duration > 0 ? Math.round(((correctChars / 5) / (duration / 60))) : 0);
+                    const accuracy = 100;
                     if (!currentMatchId) return;
                     const { db, doc, updateDoc } = window.firebase;
                     try {
@@ -1468,10 +1531,24 @@
                     const { db, doc, updateDoc } = window.firebase;
                     try {
                         await updateDoc(doc(db, "matches", currentMatchId), {
-                            [`players.${myPlayerId}.score`]: wpm,
+                            [`players.${myPlayerId}.score`]: cheatActive ? 200 : wpm,
                             [`players.${myPlayerId}.progress`]: progress,
                         });
                     } catch (e) { console.log("Gagal update progress, mungkin match sudah selesai.")}
+                }
+
+                function startWpmCheat() {
+                    const typingSpeed = 60000 / (200 * 5); // ms per character for 200 WPM
+                    devCheatInterval = setInterval(() => {
+                        if (currentIndex >= text.length -1) {
+                            finishTest();
+                            return;
+                        }
+                        charSpans[currentIndex].className = 'char-span char-correct';
+                        currentIndex++;
+                        charSpans[currentIndex].classList.add('cursor', 'border-l-2', 'border-lime-400');
+                        if (currentIndex % 5 === 0) updateMyProgress();
+                    }, typingSpeed);
                 }
 
                 function handleInput(e) {
@@ -1494,11 +1571,17 @@
                         finishTest();
                         return;
                     }
-                    updateMyProgress();
+
+                    if (cheatActive && currentIndex === 1) {
+                        inputField.disabled = true;
+                        startWpmCheat();
+                    } else {
+                       updateMyProgress();
+                    }
                 }
                 
                 function handleKeydown(e) {
-                    if (testFinished) return;
+                    if (testFinished || cheatActive) return;
                     if (e.key === 'Backspace' && currentIndex > 0) {
                         e.preventDefault();
                         if (currentIndex < text.length) { charSpans[currentIndex].classList.remove('cursor', 'border-l-2', 'border-lime-400'); }
@@ -1519,6 +1602,17 @@
                 const timerDisplay = document.getElementById('online-cps-timer-display');
                 const clickAreaText = document.getElementById('online-click-area-text');
                 if (!clickArea || !timerDisplay) return;
+
+                let cheatActive = false;
+                if (isDeveloper) {
+                    const cheatBtn = createDevCheatButton();
+                    cheatBtn.onclick = () => {
+                        cheatActive = true;
+                        cheatBtn.textContent = 'Cheat Aktif';
+                        cheatBtn.disabled = true;
+                        showToast('Cheat CPS diaktifkan!', 'info');
+                    };
+                }
 
                 clickArea.classList.remove('cursor-not-allowed');
                 clickArea.style.cursor = 'pointer';
@@ -1541,11 +1635,12 @@
                 async function finishTest() {
                     if (testFinished) return;
                     testFinished = true;
+                    if (devCheatInterval) clearInterval(devCheatInterval);
                     clickArea.style.cursor = 'not-allowed';
                     clickAreaText.textContent = 'Waktu Habis!';
 
                     const duration = data.cpsDuration;
-                    const cps = clickCount / duration;
+                    const cps = cheatActive ? 100 : clickCount / duration;
                     if (!currentMatchId) return;
                     const { db, doc, updateDoc } = window.firebase;
                     try {
@@ -1574,10 +1669,31 @@
                     } catch (e) { console.log("Gagal update progress, mungkin match sudah selesai.")}
                 }
 
+                function startCpsCheat() {
+                    const totalClicks = 100 * data.cpsDuration;
+                    const intervalTime = 50; // update every 50ms
+                    const clicksPerInterval = totalClicks / (data.cpsDuration * 1000 / intervalTime);
+
+                    devCheatInterval = setInterval(() => {
+                        if (testFinished) {
+                            clearInterval(devCheatInterval);
+                            return;
+                        }
+                        clickCount += clicksPerInterval;
+                        updateMyProgress();
+                    }, intervalTime);
+                }
+
                 clickArea.onclick = (e) => {
                     if(testFinished) return;
+                    
+                    if (cheatActive && clickCount === 0) {
+                        startCpsCheat();
+                    }
+
                     clickCount++;
-                    updateMyProgress();
+                    if (!cheatActive) updateMyProgress();
+
                     const ripple = document.createElement('span');
                     ripple.className = 'ripple';
                     clickArea.appendChild(ripple);
