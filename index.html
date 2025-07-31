@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TyperID v11 - The Ultimate Training Hub</title>
+    <title>TyperID v12.1 - The Ultimate Training Hub</title>
     
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌨️</text></svg>">
+
     <!-- Memuat Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -18,13 +21,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <style>
+        /* General Styling */
         body { font-family: 'Inter', sans-serif; overflow: hidden; }
         #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .view { display: none; }
+        .view.active { display: flex; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Tabs & Buttons */
         .tab-nav { transition: opacity 0.3s, visibility 0.3s; }
         .tab-nav.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         .tab.active, .mode-btn.active, .modal-tab.active { background-color: #06b6d4; color: white; box-shadow: 0 0 15px rgba(6, 182, 212, 0.5); }
         .tab:not(.active), .modal-tab:not(.active) { background-color: #374151; }
         .mode-btn:not(.active) { background-color: #4b5563; }
+
+        /* Typing Area */
         .cursor { animation: blink 1s infinite; }
         @keyframes blink { 50% { border-left-color: #a3e635; } }
         .char-span { transition: color 0.2s, background-color 0.2s; }
@@ -32,52 +44,48 @@
         .char-incorrect { color: #f87171; background-color: rgba(239, 68, 68, 0.2); border-radius: 2px; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
         .shake-error { animation: shake 0.2s ease-in-out; }
+        
+        /* Effects */
         .ripple { position: absolute; border-radius: 50%; background-color: rgba(163, 230, 53, 0.5); transform: scale(0); animation: ripple 0.6s linear; }
         @keyframes ripple { to { transform: scale(4); opacity: 0; } }
-        .view { display: none; }
-        .view.active { display: flex; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
         /* Role Tags Style */
         .role-tag { font-weight: bold; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; }
-        .dev-tag { background: linear-gradient(90deg, #a3e635, #22d3ee, #a3e635); background-size: 200% 200%; color: #111827; animation: gradient-animation 3s ease infinite; }
-        .admin-tag { background: linear-gradient(90deg, #facc15, #f59e0b, #facc15); background-size: 200% 200%; color: #111827; animation: gradient-animation 4s ease infinite; font-size: 0.7rem; }
-        .user-tag { background-color: #4b5563; color: #d1d5db; }
         @keyframes gradient-animation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .dev-tag { background: linear-gradient(90deg, #a3e635, #22d3ee, #a3e635); background-size: 200% 200%; color: #111827; animation: gradient-animation 3s ease infinite; }
+        .admin-tag { background: linear-gradient(90deg, #facc15, #fb923c, #facc15); background-size: 200% 200%; color: #111827; animation: gradient-animation 4s ease infinite; }
+        .user-tag { background-color: #4b5563; color: #d1d5db; }
 
-        /* General Modal/Overlay Style */
+        /* Overlays & Modals */
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(17, 24, 39, 0.8); backdrop-filter: blur(5px); z-index: 10000; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 1rem; }
         .modal-card { background-color: #1f2937; border: 1px solid #374151; border-radius: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 500px; }
-        
-        /* Countdown & Loader */
         #countdown-text { font-size: 10rem; font-weight: 900; color: white; animation: countdown-zoom 1s ease-in-out infinite; }
         @keyframes countdown-zoom { from { transform: scale(0.8); opacity: 0.5; } to { transform: scale(1.2); opacity: 1; } }
         #app-loader .spinner { width: 60px; height: 60px; border: 5px solid #4b5563; border-top-color: #22d3ee; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Special Message Toast */
-        .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; align-items: center; }
-        .toast { padding: 12px 20px; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: toast-in 0.5s forwards, toast-out 0.5s forwards 2.5s; opacity: 0; transform: translateY(20px); }
+        /* Toasts */
+        .toast-container { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .toast { padding: 14px 22px; border-radius: 8px; color: white; font-weight: 500; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: toast-in 0.5s forwards, toast-out 0.5s forwards 2.5s; opacity: 0; transform: translateY(20px); }
         .toast.info { background-color: #06b6d4; }
         .toast.error { background-color: #ef4444; }
-        .special-toast {
-            padding: 1rem 1.5rem;
-            border-radius: 0.5rem;
-            color: white;
-            font-weight: 500;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            animation: special-toast-in 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards, toast-out 0.5s forwards 7.5s;
-            opacity: 0;
-            transform: translateY(20px);
-            border-left: 5px solid;
-            max-width: 400px;
-            text-align: center;
-        }
+        .special-toast { padding: 1rem 1.5rem; border-radius: 0.5rem; color: white; font-weight: 500; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: special-toast-in 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards, toast-out 0.5s forwards 7.5s; opacity: 0; transform: translateY(20px); border-left: 5px solid; max-width: 400px; text-align: center; }
         .special-toast.dev-message { background: linear-gradient(to right, #1f2937, #374151); border-color: #22d3ee; }
         .special-toast.admin-message { background: linear-gradient(to right, #1f2937, #374151); border-color: #facc15; }
         @keyframes toast-in { to { opacity: 1; transform: translateY(0); } }
         @keyframes toast-out { to { opacity: 0; transform: translateY(20px); } }
+        @keyframes special-toast-in { to { opacity: 1; transform: translateY(0); } }
+
+        /* Global Chat */
+        #global-chat-view { height: calc(100vh - 250px); max-height: 600px; }
+        .chat-bubble { max-width: 75%; padding: 0.75rem 1rem; border-radius: 1.25rem; word-wrap: break-word; }
+        .chat-bubble.user-bubble { background-color: #374151; border-bottom-left-radius: 0.25rem; }
+        .chat-bubble.my-bubble { background-color: #06b6d4; border-bottom-right-radius: 0.25rem; }
+        .chat-bubble.admin-bubble { background: linear-gradient(135deg, #facc15, #fb923c); color: #1f2937; border-bottom-left-radius: 0.25rem; }
+        .chat-bubble.my-admin-bubble { background: linear-gradient(135deg, #facc15, #fb923c); color: #1f2937; border-bottom-right-radius: 0.25rem; }
+        .chat-bubble.dev-bubble { background: linear-gradient(135deg, #a3e635, #22d3ee); color: #111827; border-bottom-left-radius: 0.25rem; transform: scale(1.02); box-shadow: 0 0 10px #22d3ee80; }
+        .chat-bubble.my-dev-bubble { background: linear-gradient(135deg, #a3e635, #22d3ee); color: #111827; border-bottom-right-radius: 0.25rem; transform: scale(1.02); box-shadow: 0 0 10px #22d3ee80; }
+        .reply-content { background-color: rgba(0,0,0,0.2); padding: 0.25rem 0.5rem; margin-bottom: 0.25rem; border-left: 3px solid #06b6d4; border-radius: 4px; font-size: 0.8rem; opacity: 0.8; }
     </style>
 </head>
 <body class="bg-gray-900 text-slate-300 flex items-center justify-center min-h-screen p-4 antialiased">
@@ -85,7 +93,7 @@
 
     <!-- Overlays -->
     <div id="countdown-overlay" class="overlay"> <span id="countdown-text">3</span> </div>
-    <div id="app-loader" class="overlay"> <div class="spinner"></div> <p id="loader-text" class="text-white text-xl mt-4 font-semibold"></p> </div>
+    <div id="app-loader" class="overlay flex-col"> <div class="spinner"></div> <p id="loader-text" class="text-white text-xl mt-4 font-semibold"></p> </div>
     <div id="banned-overlay" class="overlay"> <h1 class="text-5xl font-bold text-red-500">ANDA TELAH DIBANNED</h1> <p class="text-slate-300 mt-2">Anda akan keluar secara otomatis dalam <span id="ban-timer">5</span> detik.</p> </div>
     
     <!-- Modals -->
@@ -117,7 +125,6 @@
         </div>
     </div>
 
-
     <div class="w-full max-w-5xl mx-auto z-10 h-screen overflow-y-auto pb-16 scrollbar-hide">
         <!-- Header -->
         <header class="text-center my-8">
@@ -125,7 +132,7 @@
                 <svg width="300" height="70" viewBox="0 0 300 70" class="inline-block">
                     <text x="0" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="white">Typer</text>
                     <text x="175" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="#22d3ee">ID</text>
-                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v11</text>
+                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v12.1</text>
                 </svg>
             </h1>
             <p class="text-slate-400 mt-1">The Ultimate Typing & CPS Training Hub</p>
@@ -147,6 +154,7 @@
                 <button id="solo-tab-btn" class="tab active px-6 py-2 font-bold rounded-md transition-all duration-300 flex items-center gap-2"><i class="fa-solid fa-user"></i> Solo</button>
                 <button id="practical-tab-btn" class="tab px-6 py-2 font-bold rounded-md transition-all duration-300 flex items-center gap-2"><i class="fa-solid fa-dumbbell"></i> Practical</button>
                 <button id="online-tab-btn" class="tab px-6 py-2 font-bold rounded-md transition-all duration-300 flex items-center gap-2"><i class="fa-solid fa-users"></i> Online</button>
+                <button id="global-chat-tab-btn" class="tab px-6 py-2 font-bold rounded-md transition-all duration-300 flex items-center gap-2"><i class="fa-solid fa-globe"></i> Global Chat</button>
             </div>
             <main>
                 <div id="solo-tester" class="view active flex-col gap-6"></div>
@@ -167,6 +175,25 @@
                     </div>
                     <div id="match-room-view" class="view flex-col gap-6"></div>
                 </div>
+                <div id="global-chat-view" class="view flex-col gap-4 bg-gray-800/80 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold text-cyan-400 text-center">Global Chat</h2>
+                        <div class="text-xs text-slate-400">
+                            <span>Refresh dalam: </span>
+                            <span id="chat-refresh-timer">180</span>s
+                        </div>
+                    </div>
+                    <div id="chat-messages-container" class="flex-grow overflow-y-auto scrollbar-hide flex flex-col-reverse">
+                        <ul id="chat-messages-list" class="flex flex-col gap-4 p-2">
+                            <!-- Messages will be injected here -->
+                        </ul>
+                    </div>
+                    <div id="chat-replying-to-container" class="hidden p-2 bg-gray-700/50 rounded-md text-sm"></div>
+                    <div class="flex gap-2">
+                        <textarea id="chat-message-input" placeholder="Ketik pesan..." rows="1" class="flex-grow bg-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 resize-none"></textarea>
+                        <button id="send-chat-message-btn" class="px-5 py-2 bg-cyan-500 text-white font-bold rounded-lg hover:bg-cyan-600 transition-colors"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
             </main>
         </div>
         
@@ -182,8 +209,9 @@
     <div class="toast-container" id="toast-container"></div>
 
     <script type="module">
+        // Firebase initialization
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, where, getDocs, limit, serverTimestamp, runTransaction, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, where, getDocs, limit, serverTimestamp, runTransaction, setDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         const firebaseConfig = {
             apiKey: "AIzaSyDVphUcSBbIG98ueli8OrhkSnC3oHV4FHc",
             authDomain: "typerid-online.firebaseapp.com",
@@ -195,7 +223,8 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        window.firebase = { db, doc, getDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, where, getDocs, limit, serverTimestamp, runTransaction, setDoc };
+        // Expose Firebase modules to the global window object for the main script
+        window.firebase = { db, doc, getDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, where, getDocs, limit, serverTimestamp, runTransaction, setDoc, orderBy };
     </script>
     
     <script>
@@ -240,6 +269,7 @@
                 soloTester: document.getElementById('solo-tester'),
                 practicalTester: document.getElementById('practical-tester'),
                 onlineTester: document.getElementById('online-tester'),
+                globalChat: document.getElementById('global-chat-view'),
                 lobby: document.getElementById('lobby-view'),
                 matchRoom: document.getElementById('match-room-view'),
                 resultsModal: document.getElementById('results-modal'),
@@ -252,6 +282,7 @@
             const soloTabBtn = document.getElementById('solo-tab-btn');
             const practicalTabBtn = document.getElementById('practical-tab-btn');
             const onlineTabBtn = document.getElementById('online-tab-btn');
+            const globalChatTabBtn = document.getElementById('global-chat-tab-btn');
             const createWpmMatchBtn = document.getElementById('create-wpm-match-btn');
             const createCpsMatchBtn = document.getElementById('create-cps-match-btn');
             const joinRandomMatchBtn = document.getElementById('join-random-match-btn');
@@ -275,10 +306,15 @@
             let unsubscribeFromBanned = null;
             let unsubscribeFromMessages = null;
             let unsubscribeFromBan = null;
+            let unsubscribeFromGlobalChat = null;
             let onlineState = {};
             let localCpsTimer = null;
             let localGameStarted = false;
             let presenceInterval = null;
+            let activeReply = null;
+            let chatRefreshInterval = null;
+            let chatRefreshCountdownInterval = null;
+            let selectedCpsDuration = 5;
 
             const textSamples = {
                 id: [
@@ -286,12 +322,22 @@
                     "Ekosistem terumbu karang merupakan salah satu keanekaragaman hayati laut yang paling kaya dan penting. Formasi ini tidak hanya menjadi rumah bagi ribuan spesies ikan dan invertebrata, tetapi juga melindungi wilayah pesisir dari erosi gelombang. Sayangnya, perubahan iklim dan polusi menjadi ancaman serius bagi kelangsungan hidup terumbu karang di seluruh dunia.",
                     "Kecerdasan buatan (AI) berkembang dengan kecepatan yang luar biasa, dari pengenalan suara hingga mobil otonom. Model pembelajaran mesin yang kompleks mampu menganalisis kumpulan data raksasa untuk menemukan pola dan membuat prediksi. Etika dalam pengembangan AI, termasuk potensi bias dan dampaknya terhadap pekerjaan, menjadi topik diskusi yang semakin mendesak di kalangan ilmuwan dan pembuat kebijakan.",
                     "Sejarah peradaban manusia adalah cerita tentang inovasi dan adaptasi. Dari penemuan api hingga revolusi agrikultur, setiap lompatan teknologi telah membentuk kembali struktur sosial dan ekonomi. Mempelajari artefak kuno dan tulisan-tulisan bersejarah memberikan kita wawasan berharga tentang bagaimana nenek moyang kita menghadapi tantangan dan membangun dunia yang kita warisi saat ini.",
+                    "Pendidikan karakter di sekolah memegang peranan krusial dalam membentuk generasi muda yang berintegritas dan bertanggung jawab. Kurikulum yang seimbang antara pengetahuan akademis dan nilai-nilai moral akan menciptakan individu yang tidak hanya cerdas secara intelektual, tetapi juga matang secara emosional dan sosial.",
+                    "Energi terbarukan seperti tenaga surya dan angin menjadi solusi menjanjikan untuk mengatasi krisis iklim. Investasi dalam infrastruktur hijau dan kebijakan yang mendukung transisi energi bersih adalah langkah vital untuk mencapai pembangunan berkelanjutan dan menjaga kelestarian planet kita untuk generasi mendatang.",
+                    "Mitigasi bencana adalah serangkaian upaya untuk mengurangi risiko bencana, baik melalui pembangunan fisik maupun penyadaran dan peningkatan kapasitas masyarakat. Sistem peringatan dini yang efektif dan tata ruang yang berbasis risiko dapat secara signifikan mengurangi jumlah korban jiwa dan kerugian material ketika bencana terjadi.",
+                    "Keberagaman budaya Indonesia adalah aset bangsa yang tak ternilai harganya. Setiap suku memiliki tradisi, bahasa, dan seni yang unik, menciptakan mozaik yang indah dan dinamis. Menjaga toleransi dan saling menghormati antarbudaya adalah kunci untuk mempertahankan persatuan dan kesatuan dalam bingkai Bhinneka Tunggal Ika.",
+                    "Ekonomi digital terus menunjukkan pertumbuhan yang pesat, didorong oleh inovasi di bidang e-commerce, fintech, dan layanan on-demand. Transformasi ini membuka peluang baru bagi para pelaku usaha mikro, kecil, dan menengah untuk memperluas jangkauan pasar mereka. Namun, literasi digital dan akses internet yang merata masih menjadi pekerjaan rumah yang harus diselesaikan."
                 ],
                 en: [
                     "The intricate tapestry of the cosmos is woven with billions of galaxies, each containing countless stars and planetary systems. Astronomers use powerful telescopes to peer across vast distances, studying the light from distant objects to understand the origins of the universe. Discoveries like dark matter and dark energy reveal that we still have much to learn about the fundamental forces that govern reality.",
-                    "Quantum mechanics describes the bizarre and counterintuitive behavior of matter and energy at the atomic and subatomic levels. Concepts such as superposition and entanglement challenge our classical understanding of the world, opening doors to new technologies like quantum computing and cryptography. These advancements promise to revolutionize fields from medicine to materials science.",
+                    "Quantum mechanics describes the bizarre and counterintuitive behavior of matter and energy at theatomic and subatomic levels. Concepts such as superposition and entanglement challenge our classical understanding of the world, opening doors to new technologies like quantum computing and cryptography. These advancements promise to revolutionize fields from medicine to materials science.",
                     "The evolution of life on Earth is a story of resilience and adaptation spanning billions of years. From single-celled organisms to the complex ecosystems we see today, natural selection has sculpted an incredible diversity of forms. The fossil record provides a fragmented but fascinating glimpse into this deep history, showing how species have risen, fallen, and transformed in response to a changing planet.",
-                    "Blockchain technology offers a decentralized and transparent method for recording transactions and managing data. Originally developed for cryptocurrencies like Bitcoin, its potential applications extend to supply chain management, voting systems, and digital identity verification. By removing the need for a central intermediary, it could fundamentally reshape how we trust and interact in a digital age."
+                    "Blockchain technology offers a decentralized and transparent method for recording transactions and managing data. Originally developed for cryptocurrencies like Bitcoin, its potential applications extend to supply chain management, voting systems, and digital identity verification. By removing the need for a central intermediary, it could fundamentally reshape how we trust and interact in a digital age.",
+                    "Urban planning in the 21st century faces the dual challenge of accommodating growing populations while promoting sustainability and livability. Smart cities leverage data and technology to optimize transportation, reduce energy consumption, and enhance public services. Green spaces, pedestrian-friendly streets, and efficient public transit are essential components of a well-designed urban environment.",
+                    "The study of psychology reveals the profound complexity of the human mind. From cognitive biases that shape our decisions to the social dynamics that influence our behavior, understanding these principles can lead to greater self-awareness and improved interpersonal relationships. Mental health is increasingly recognized as a vital component of overall well-being.",
+                    "Climate change is not a distant threat but a present reality, with observable effects on weather patterns, sea levels, and ecosystems. International cooperation and individual action are both critical to curb greenhouse gas emissions and transition to a low-carbon economy. The choices we make today will determine the health of our planet for generations to come.",
+                    "The principles of aerodynamics govern the flight of everything from bumblebees to jumbo jets. Understanding concepts like lift, drag, thrust, and weight is essential for aircraft design. Wind tunnels and computational fluid dynamics are crucial tools for testing and refining new aeronautical innovations.",
+                    "Artificial intelligence is rapidly transforming the creative industries. Generative models can now produce original text, images, and music that are often indistinguishable from human-created works. This raises fascinating questions about the nature of creativity, authorship, and the future role of human artists in a technologically advanced world."
                 ]
             };
 
@@ -318,10 +364,11 @@
             }
 
             function toggleMainTabs(show) { mainTabNav.classList.toggle('hidden', !show); }
+            
             function showOverlay(overlayId, show, text = '') {
                 const overlay = document.getElementById(overlayId);
-                if (text) {
-                    const textElement = overlay.querySelector('p');
+                if (overlayId === 'app-loader' && text) {
+                    const textElement = document.getElementById('loader-text');
                     if (textElement) textElement.textContent = text;
                 }
                 overlay.style.display = show ? 'flex' : 'none';
@@ -377,6 +424,7 @@
                 startPresenceSystem();
                 listenForMessages();
                 listenForBan();
+                startGlobalChatSystem();
 
                 switchView('mainApp', ['nameEntry', 'mainApp']);
                 toggleMainTabs(true);
@@ -418,6 +466,7 @@
                 switchView('nameEntry');
                 injectSoloUI();
                 injectPracticalUI();
+                initializeGlobalChat();
             }
 
             enterAppBtn.addEventListener('click', showMainApp);
@@ -426,12 +475,13 @@
             const mainTabs = [
                 { btn: soloTabBtn, view: 'soloTester' },
                 { btn: practicalTabBtn, view: 'practicalTester' },
-                { btn: onlineTabBtn, view: 'onlineTester' }
+                { btn: onlineTabBtn, view: 'onlineTester' },
+                { btn: globalChatTabBtn, view: 'globalChat' }
             ];
 
             mainTabs.forEach(tab => {
                 tab.btn.addEventListener('click', () => {
-                    if (tab.view === 'onlineTester' && !myPlayerName) {
+                    if ((tab.view === 'onlineTester' || tab.view === 'globalChat') && !myPlayerName) {
                         showToast("Masukkan nama Anda terlebih dahulu!", 'error');
                         switchView('nameEntry', ['nameEntry', 'mainApp']);
                         return;
@@ -447,17 +497,20 @@
             
             initializeApp();
 
-            // SOLO MODE (UNCHANGED)
+            // ==================================================
+            // SOLO MODE
+            // ==================================================
             function injectSoloUI(){views.soloTester.innerHTML=`<div class="bg-gray-800/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-700/50 flex justify-center gap-2 mb-6"><button class="solo-test-type-btn mode-btn active px-4 py-1 rounded font-semibold" data-type="wpm">WPM Test</button><button class="solo-test-type-btn mode-btn px-4 py-1 rounded font-semibold" data-type="cps">CPS Test</button></div><div id="solo-wpm-container"></div><div id="solo-cps-container" class="hidden"></div>`;injectSoloWpmUI();injectSoloCpsUI();document.querySelectorAll(".solo-test-type-btn").forEach(t=>{t.addEventListener("click",()=>{document.querySelectorAll(".solo-test-type-btn").forEach(t=>t.classList.remove("active")),t.classList.add("active");const e=t.dataset.type;document.getElementById("solo-wpm-container").classList.toggle("hidden","wpm"!==e),document.getElementById("solo-cps-container").classList.toggle("hidden","cps"!==e)})})}
             function injectSoloWpmUI(){document.getElementById("solo-wpm-container").innerHTML=`<div class="flex flex-col gap-6"><div class="bg-gray-800/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-700/50 flex justify-center gap-2"><button class="solo-mode-btn mode-btn px-4 py-1 rounded font-semibold" data-mode="time" data-duration="15">15s</button><button class="solo-mode-btn mode-btn px-4 py-1 rounded font-semibold" data-mode="time" data-duration="30">30s</button><button class="solo-mode-btn mode-btn px-4 py-1 rounded font-semibold" data-mode="time" data-duration="60">60s</button><button class="solo-mode-btn mode-btn active px-4 py-1 rounded font-semibold" data-mode="text" data-duration="0">Teks</button></div><div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center"><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">WPM</p><p id="solo-wpm" class="text-4xl font-bold text-white">0</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">Akurasi</p><p id="solo-accuracy" class="text-4xl font-bold text-white">100%</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">Waktu</p><p id="solo-timer" class="text-4xl font-bold text-white">0s</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">Kesalahan</p><p id="solo-error-count" class="text-4xl font-bold text-white">0</p></div></div><div id="solo-text-container" class="bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg shadow-lg relative min-h-[140px] flex items-center border border-gray-700"><p id="solo-text-display" class="text-2xl leading-relaxed tracking-wide text-slate-400 select-none"></p><input id="solo-input-field" type="text" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-default" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div><div class="flex flex-col md:flex-row gap-4"><div class="flex-grow bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-lime-500/20"><h3 class="text-center text-lime-400 font-bold mb-2 flex items-center justify-center gap-2"><i class="fa-solid fa-chart-line"></i> Statistik Sesi Ini</h3><div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center"><div><p class="text-sm">Raw WPM</p><p id="solo-raw-wpm" class="text-2xl font-bold">-</p></div><div><p class="text-sm">Karakter</p><p id="solo-char-stats" class="text-2xl font-bold">-</p></div><div><p class="text-sm">Avg. WPM</p><p id="solo-avg-wpm" class="text-2xl font-bold">-</p></div><div><p class="text-sm">Avg. Akurasi</p><p id="solo-avg-accuracy" class="text-2xl font-bold">-</p></div></div><button id="solo-reset-history-btn" class="text-xs text-red-400 hover:underline text-center w-full mt-3">Reset Statistik</button></div><div class="flex flex-col gap-2"><div class="flex gap-2"><button id="solo-lang-id" class="w-full px-4 py-2 bg-cyan-500 text-white font-bold rounded-md hover:bg-cyan-600 transition-colors">Indonesia</button><button id="solo-lang-en" class="w-full px-4 py-2 bg-gray-700 text-slate-300 font-bold rounded-md hover:bg-gray-600 transition-colors">English</button></div><button id="solo-restart-btn" class="w-full px-6 py-2 bg-lime-400 text-gray-900 font-bold rounded-md hover:bg-lime-500 transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-right"></i> Mulai Ulang</button></div></div></div>`;initializeSoloWpmMode()}
-            function injectSoloCpsUI(){document.getElementById("solo-cps-container").innerHTML=`<div class="flex flex-col gap-6 items-center"><div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center w-full"><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">CPS</p><p id="solo-cps" class="text-4xl font-bold text-white">0</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">Klik</p><p id="solo-clicks" class="text-4xl font-bold text-white">0</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20 col-span-2"><p class="text-sm text-cyan-400">Waktu</p><p id="solo-cps-timer" class="text-4xl font-bold text-white">5s</p></div></div><div id="solo-click-area" class="w-full h-64 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg flex items-center justify-center text-center border-2 border-dashed border-cyan-500/50 cursor-pointer hover:border-cyan-500 relative overflow-hidden"><p id="solo-click-area-text" class="text-3xl font-bold text-white">Klik di sini untuk memulai!</p></div><button id="solo-restart-cps-btn" class="w-full max-w-xs px-6 py-3 bg-lime-400 text-gray-900 font-bold rounded-md hover:bg-lime-500 transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-right"></i> Mulai Ulang</button></div>`;initializeSoloCpsMode()}
+            function injectSoloCpsUI(){document.getElementById("solo-cps-container").innerHTML=`<div class="flex flex-col gap-6 items-center"><div class="bg-gray-800/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-700/50 flex justify-center gap-2 mb-2"><button class="solo-cps-duration-btn mode-btn active px-4 py-1 rounded font-semibold" data-duration="5">5s</button><button class="solo-cps-duration-btn mode-btn px-4 py-1 rounded font-semibold" data-duration="10">10s</button><button class="solo-cps-duration-btn mode-btn px-4 py-1 rounded font-semibold" data-duration="15">15s</button><button class="solo-cps-duration-btn mode-btn px-4 py-1 rounded font-semibold" data-duration="20">20s</button></div><div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center w-full"><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">CPS</p><p id="solo-cps" class="text-4xl font-bold text-white">0</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20"><p class="text-sm text-cyan-400">Klik</p><p id="solo-clicks" class="text-4xl font-bold text-white">0</p></div><div class="bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-cyan-500/20 col-span-2"><p class="text-sm text-cyan-400">Waktu</p><p id="solo-cps-timer" class="text-4xl font-bold text-white">5s</p></div></div><div id="solo-click-area" class="w-full h-64 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg flex items-center justify-center text-center border-2 border-dashed border-cyan-500/50 cursor-pointer hover:border-cyan-500 relative overflow-hidden"><p id="solo-click-area-text" class="text-3xl font-bold text-white">Klik di sini untuk memulai!</p></div><button id="solo-restart-cps-btn" class="w-full max-w-xs px-6 py-3 bg-lime-400 text-gray-900 font-bold rounded-md hover:bg-lime-500 transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-right"></i> Mulai Ulang</button></div>`;initializeSoloCpsMode()}
             function initializeSoloWpmMode(){const t=document.getElementById("solo-text-display"),e=document.getElementById("solo-text-container"),n=document.getElementById("solo-input-field"),o=document.getElementById("solo-wpm"),a=document.getElementById("solo-accuracy"),i=document.getElementById("solo-timer"),s=document.getElementById("solo-error-count"),l=document.getElementById("solo-raw-wpm"),c=document.getElementById("solo-char-stats"),r=document.getElementById("solo-restart-btn"),d=document.getElementById("solo-lang-id"),u=document.getElementById("solo-lang-en"),m=document.getElementById("solo-avg-wpm"),p=document.getElementById("solo-avg-accuracy"),g=document.querySelectorAll(".solo-mode-btn"),h=document.getElementById("solo-reset-history-btn");let y="id",f="text",v=0,w="",b=[],k=0,C=0,E=null,M=null,S=!1,L=[];function T(){const t=localStorage.getItem("typerIdSoloHistory");L=t?JSON.parse(t):[],A()}function I(){localStorage.setItem("typerIdSoloHistory",JSON.stringify(L))}function q(){confirm("Apakah Anda yakin ingin mereset riwayat statistik solo?")&&(L=[],localStorage.removeItem("typerIdSoloHistory"),A())}function x(){y_(),w=textSamples[y][Math.floor(Math.random()*textSamples[y].length)],t.innerHTML="",b=w.split("").map(e=>{const n=document.createElement("span");return n.className="char-span",n.innerText=e,t.appendChild(n),n}),b.length>0&&b[0].classList.add("cursor","border-l-2","border-lime-400"),n.focus()}function y_(){clearInterval(M),S=!1,k=0,C=0,E=null,M=null,n.value="",o.textContent="0",a.textContent="100%",s.textContent="0",l.textContent="-",c.textContent="-",i.textContent="time"===f?`${v}s`:"0s",b&&b.length>0&&(b.forEach(t=>{t.className="char-span"}),b[0].classList.add("cursor","border-l-2","border-lime-400"))}function A(){L.length===0?(m.textContent="-",p.textContent="-"): (m.textContent=Math.round(L.reduce((t,e)=>t+e.wpm,0)/L.length),p.textContent=`${Math.round(L.reduce((t,e)=>t+e.accuracy,0)/L.length)}%`)}function B(t){if(S)return;if("Backspace"===t.key&&k>0){t.preventDefault(),k<b.length&&b[k].classList.remove("cursor","border-l-2","border-lime-400"),k--,b[k].className="char-span",b[k].classList.add("cursor","border-l-2","border-lime-400")}}function D(t){if(S||k>=w.length)return;E||(E=new Date,M=setInterval(H,500));const o=t.target.value.slice(-1);t.target.value="";const a=w[k],i=b[k];if(o!==a){i.classList.contains("char-incorrect")||(C++,i.classList.add("char-incorrect")),e.classList.remove("shake-error"),void e.offsetWidth,e.classList.add("shake-error"),H();return}i.classList.remove("char-incorrect"),i.classList.add("char-correct"),i.classList.remove("cursor","border-l-2","border-lime-400"),k++,k<w.length?b[k].classList.add("cursor","border-l-2","border-lime-400"):"text"===f&&P(),H()}function H(){if(!E||S)return;const t=(new Date-E)/1e3;if("time"===f){const e=v-t;if(i.textContent=`${Math.max(0,Math.ceil(e))}s`,e<=0)return void P()}else i.textContent=`${Math.floor(t)}s`;const e=k-C,n=k>0?Math.round(e/k*100):100,r=t>0?Math.round(e/5/(t/60)):0,d=t>0?Math.round(k/5/(t/60)):0;o.textContent=r,a.textContent=`${n}%`,s.textContent=C,l.textContent=d,c.textContent=`${e}/${C}`}function P(){if(S)return;S=!0,clearInterval(M),n.blur();const t=(new Date-E)/1e3,e=k-C,i=t>0?Math.round(e/5/(t/60)):0,s=k>0?Math.round(e/k*100):100;o.textContent=i,a.textContent=`${s}%`,k>5&&(L.push({wpm:i,accuracy:s}),I(),A())}g.forEach(t=>{t.addEventListener("click",()=>{g.forEach(t=>t.classList.remove("active")),t.classList.add("active"),f=t.dataset.mode,v=parseInt(t.dataset.duration,10),x()})}),n.addEventListener("input",D),n.addEventListener("keydown",B),r.addEventListener("click",x),d.addEventListener("click",()=>U("id")),u.addEventListener("click",()=>U("en")),t.addEventListener("click",()=>n.focus()),h.addEventListener("click",q);function U(t){y=t,d.classList.toggle("bg-cyan-500","id"===t),d.classList.toggle("bg-gray-700","id"!==t),u.classList.toggle("bg-cyan-500","en"===t),u.classList.toggle("bg-gray-700","en"!==t),x()}T(),x()}
-            function initializeSoloCpsMode(){const t=document.getElementById("solo-click-area"),e=document.getElementById("solo-click-area-text"),n=document.getElementById("solo-cps"),o=document.getElementById("solo-clicks"),a=document.getElementById("solo-cps-timer"),i=document.getElementById("solo-restart-cps-btn");let s,l=5,c=0,r=!1;function d(){clearInterval(s),l=5,c=0,r=!1,n.textContent="0",o.textContent="0",a.textContent=`${l}s`,e.textContent="Klik di sini untuk memulai!",t.style.cursor="pointer"}function u(){if(r)return;r=!0,c=0,o.textContent="0",e.textContent="Klik!",s=setInterval(()=>{l--,a.textContent=`${l}s`;const t=c/(5-l);n.textContent=isNaN(t)?"0":t.toFixed(2),l<=0&&m()},1e3)}function m(){clearInterval(s),r=!1;const t=(c/5).toFixed(2);n.textContent=t,e.textContent=`Selesai! CPS Anda: ${t}`,t.style.cursor="default"}t.addEventListener("click",n=>{!r&&l>0&&u(),r&&(c++,o.textContent=c,function(e){const n=document.createElement("span");n.className="ripple",t.appendChild(n);const o=t.getBoundingClientRect();n.style.left=`${e.clientX-o.left}px`,n.style.top=`${e.clientY-o.top}px`,n.onanimationend=()=>n.remove()}(n))}),i.addEventListener("click",d),d()}
+            function initializeSoloCpsMode(){const t=document.getElementById("solo-click-area"),e=document.getElementById("solo-click-area-text"),n=document.getElementById("solo-cps"),o=document.getElementById("solo-clicks"),a=document.getElementById("solo-cps-timer"),i=document.getElementById("solo-restart-cps-btn"),s=document.querySelectorAll(".solo-cps-duration-btn");let l,c=5,r=0,d=!1;function u(){clearInterval(l),c=parseInt(document.querySelector(".solo-cps-duration-btn.active").dataset.duration,10),r=0,d=!1,n.textContent="0",o.textContent="0",a.textContent=`${c}s`,e.textContent="Klik di sini untuk memulai!",t.style.cursor="pointer"}function m(){if(d)return;d=!0,r=0,o.textContent="0",e.textContent="Klik!";const i=c;l=setInterval(()=>{c--,a.textContent=`${c}s`;const t=r/(i-c);n.textContent=isNaN(t)?"0":t.toFixed(2),c<=0&&p()},1e3)}function p(){clearInterval(l),d=!1;const i=parseInt(document.querySelector(".solo-cps-duration-btn.active").dataset.duration,10),s=(r/i).toFixed(2);n.textContent=s,e.textContent=`Selesai! CPS Anda: ${s}`,t.style.cursor="default"}t.addEventListener("click",e=>{!d&&c>0&&m(),d&&(r++,o.textContent=r,function(e){const n=document.createElement("span");n.className="ripple",t.appendChild(n);const o=t.getBoundingClientRect();n.style.left=`${e.clientX-o.left}px`,n.style.top=`${e.clientY-o.top}px`,n.onanimationend=()=>n.remove()}(e))}),i.addEventListener("click",u),s.forEach(t=>{t.addEventListener("click",()=>{s.forEach(t=>t.classList.remove("active")),t.classList.add("active"),u()})}),u()}
 
             // ==================================================
             // PRACTICAL MODE
             // ==================================================
             function injectPracticalUI() {
+                const wordList = ["bisa", "kamu", "itu", "ini", "apa", "dan", "dari", "untuk", "dengan", "yang", "tidak", "akan", "tapi", "jika", "juga", "sudah", "belum", "harus", "karena", "seperti", "mereka", "adalah", "menjadi", "membuat", "lebih", "banyak", "sangat", "selalu", "waktu", "orang", "dunia", "hidup", "cinta", "rumah", "kota", "jalan", "air", "api", "bumi", "langit", "matahari", "bulan", "bintang", "pagi", "siang", "malam", "hari", "minggu", "tahun", "teman", "kerja", "sekolah", "belajar", "main", "makan", "minum", "tidur", "bangun", "pergi", "pulang", "datang", "lihat", "dengar", "bicara", "tanya", "jawab", "tahu", "pikir", "rasa", "ingin", "mau", "bukan", "atau", "hanya", "saja", "pasti", "mungkin"];
                 views.practicalTester.innerHTML = `
                     <div class="flex flex-col gap-6">
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
@@ -484,10 +537,10 @@
                         </div>
                     </div>
                 `;
-                initializePracticalMode();
+                initializePracticalMode(wordList);
             }
 
-            function initializePracticalMode() {
+            function initializePracticalMode(wordList) {
                 const textDisplay = document.getElementById('practical-text-display');
                 const textContainer = document.getElementById('practical-text-container');
                 const inputField = document.getElementById('practical-input-field');
@@ -501,8 +554,6 @@
                 const avgAccuracyEl = document.getElementById('practical-avg-accuracy');
                 const restartBtn = document.getElementById('practical-restart-btn');
 
-                const wordList = ["bisa", "kamu", "itu", "ini", "apa", "dan", "dari", "untuk", "dengan", "yang", "tidak", "akan", "tapi", "jika", "juga", "sudah", "belum", "harus", "karena", "seperti", "mereka", "adalah", "menjadi", "membuat", "lebih", "banyak", "sangat", "selalu", "waktu", "orang", "dunia", "hidup", "cinta", "rumah", "kota", "jalan", "air", "api", "bumi", "langit", "matahari", "bulan", "bintang", "pagi", "siang", "malam", "hari", "minggu", "tahun"];
-
                 let currentWord = '';
                 let charSpans = [];
                 let currentIndex = 0;
@@ -513,10 +564,12 @@
                 let timerInterval = null;
                 let streak = 0;
                 let testHistory = [];
+                let wordError = false;
 
                 function loadNewWord() {
                     inputField.value = '';
                     currentIndex = 0;
+                    wordError = false;
                     currentWord = wordList[Math.floor(Math.random() * wordList.length)];
                     textDisplay.innerHTML = '';
                     charSpans = currentWord.split('').map(char => {
@@ -589,63 +642,58 @@
 
                     const expectedChar = currentWord[currentIndex];
                     const currentSpan = charSpans[currentIndex];
-                    totalCharsTyped++;
+                    
+                    if (!currentSpan.classList.contains('char-correct') && !currentSpan.classList.contains('char-incorrect')) {
+                        totalCharsTyped++;
+                    }
 
                     if (typedChar === expectedChar) {
                         currentSpan.className = 'char-span char-correct';
-                        totalCorrectChars++;
-                    } else {
-                        currentSpan.className = 'char-span char-incorrect';
-                        totalErrorCount++;
-                        streak = 0; // Reset streak on error
-                    }
-
-                    currentSpan.classList.remove('cursor', 'border-l-2', 'border-lime-400');
-                    currentIndex++;
-                    
-                    if (currentIndex < currentWord.length) {
-                        charSpans[currentIndex].classList.add('cursor', 'border-l-2', 'border-lime-400');
-                    } else { // Word finished
-                        const wordCorrect = !Array.from(charSpans).some(s => s.classList.contains('char-incorrect'));
-                        if (wordCorrect) {
-                            streak++;
+                        if (!wordError) {
+                           totalCorrectChars++;
                         }
-                        const elapsedTime = (new Date() - startTime) / 1000;
-                        const currentWpm = elapsedTime > 0 ? Math.round((totalCorrectChars / 5) / (elapsedTime / 60)) : 0;
-                        const currentAccuracy = totalCharsTyped > 0 ? Math.round((totalCorrectChars / totalCharsTyped) * 100) : 100;
-                        testHistory.push({ wpm: currentWpm, accuracy: currentAccuracy });
-                        updateAverageStats();
                         
-                        setTimeout(loadNewWord, 100); // Small delay before new word
+                        currentSpan.classList.remove('cursor', 'border-l-2', 'border-lime-400');
+                        currentIndex++;
+                        
+                        if (currentIndex < currentWord.length) {
+                            charSpans[currentIndex].classList.add('cursor', 'border-l-2', 'border-lime-400');
+                        } else { // Word finished
+                            if (!wordError) {
+                                streak++;
+                            }
+                            const elapsedTime = (new Date() - startTime) / 1000;
+                            const currentWpm = elapsedTime > 0 ? Math.round((totalCorrectChars / 5) / (elapsedTime / 60)) : 0;
+                            const currentAccuracy = totalCharsTyped > 0 ? Math.round((totalCorrectChars / totalCharsTyped) * 100) : 100;
+                            testHistory.push({ wpm: currentWpm, accuracy: currentAccuracy });
+                            updateAverageStats();
+                            
+                            setTimeout(loadNewWord, 100);
+                        }
+                    } else {
+                        if (!currentSpan.classList.contains('char-incorrect')) {
+                            currentSpan.className = 'char-span char-incorrect';
+                            if (!wordError) {
+                                totalErrorCount++;
+                                wordError = true;
+                                streak = 0; // Reset streak on error
+                            }
+                            textContainer.classList.remove('shake-error');
+                            void textContainer.offsetWidth; // Trigger reflow
+                            textContainer.classList.add('shake-error');
+                        }
                     }
                     updateStats();
                 }
                 
-                function handleKeyDown(e) {
-                     if (e.key === 'Backspace' && currentIndex > 0) {
-                        e.preventDefault();
-                        if (currentIndex < charSpans.length) {
-                             charSpans[currentIndex].classList.remove('cursor', 'border-l-2', 'border-lime-400');
-                        }
-                        currentIndex--;
-                        charSpans[currentIndex].className = 'char-span';
-                        charSpans[currentIndex].classList.add('cursor', 'border-l-2', 'border-lime-400');
-                        // Re-evaluate stats on backspace
-                        totalCharsTyped--; 
-                        if(charSpans[currentIndex].classList.contains('char-correct')) totalCorrectChars--;
-                        else totalErrorCount--;
-                    }
-                }
-
                 inputField.addEventListener('input', handleTextInput);
-                inputField.addEventListener('keydown', handleKeyDown);
                 restartBtn.addEventListener('click', resetState);
                 textDisplay.addEventListener('click', () => inputField.focus());
                 resetState();
             }
 
             // ==================================================
-            // ONLINE & ADMIN SYSTEMS
+            // ONLINE, ADMIN & GLOBAL CHAT SYSTEMS
             // ==================================================
             function startPresenceSystem() {
                 const { db, doc, setDoc, serverTimestamp } = window.firebase;
@@ -673,8 +721,15 @@
                     snapshot.docChanges().forEach((change) => {
                         if (change.type === "added") {
                             const messageData = change.doc.data();
-                            const senderTag = messageData.senderIsDeveloper ? `<span class="dev-tag role-tag">Developer</span>` : `<span class="admin-tag role-tag">Admin</span>`;
-                            const messageType = messageData.senderIsDeveloper ? 'dev' : 'admin';
+                            let senderTag = '';
+                            let messageType = 'info';
+                            if (messageData.senderIsDeveloper) {
+                                senderTag = `<span class="dev-tag role-tag">Developer</span>`;
+                                messageType = 'dev';
+                            } else if (messageData.senderIsAdmin) {
+                                senderTag = `<span class="admin-tag role-tag">Admin</span>`;
+                                messageType = 'admin';
+                            }
                             showSpecialToast(messageData.senderName, senderTag, messageData.message, messageType);
                             deleteDoc(doc(db, "users", myPlayerId, "messages", change.doc.id));
                         }
@@ -701,7 +756,7 @@
                     if (countdown <= 0) {
                         clearInterval(timer);
                         document.body.innerHTML = '';
-                        window.close();
+                        window.location.reload();
                     }
                 }, 1000);
             }
@@ -852,6 +907,7 @@
             function openSendMessageModal(userId, username) {
                 document.getElementById('message-recipient-name').textContent = username;
                 document.getElementById('confirm-send-message-btn').dataset.userid = userId;
+                document.getElementById('message-input').value = '';
                 showOverlay('send-message-modal', true);
             }
 
@@ -859,7 +915,7 @@
             document.getElementById('confirm-send-message-btn').addEventListener('click', async (e) => {
                 const { db, collection, addDoc, serverTimestamp } = window.firebase;
                 const targetId = e.target.dataset.userid;
-                const message = document.getElementById('message-input').value;
+                const message = document.getElementById('message-input').value.trim();
                 if (!message) { showToast('Pesan tidak boleh kosong!', 'error'); return; }
 
                 await addDoc(collection(db, "users", targetId, "messages"), {
@@ -874,15 +930,158 @@
                 showOverlay('send-message-modal', false);
             });
 
+            // --- Global Chat Logic ---
+            function initializeGlobalChat() {
+                const messageInput = document.getElementById('chat-message-input');
+                const sendBtn = document.getElementById('send-chat-message-btn');
+                
+                sendBtn.addEventListener('click', sendChatMessage);
+                messageInput.addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendChatMessage();
+                    }
+                });
+
+                document.getElementById('chat-messages-list').addEventListener('click', (e) => {
+                    const replyBtn = e.target.closest('.reply-btn');
+                    if (replyBtn) {
+                        const messageId = replyBtn.dataset.messageid;
+                        const senderName = replyBtn.dataset.sendername;
+                        activateReply(messageId, senderName);
+                    }
+                });
+            }
+
+            function startGlobalChatSystem() {
+                if (chatRefreshInterval) clearInterval(chatRefreshInterval);
+                if (chatRefreshCountdownInterval) clearInterval(chatRefreshCountdownInterval);
+
+                listenToGlobalChat(); // Initial fetch
+                
+                chatRefreshInterval = setInterval(listenToGlobalChat, 180000); // Refresh every 3 minutes
+
+                let countdown = 180;
+                const timerEl = document.getElementById('chat-refresh-timer');
+                timerEl.textContent = countdown;
+                chatRefreshCountdownInterval = setInterval(() => {
+                    countdown--;
+                    if (countdown < 0) countdown = 180;
+                    timerEl.textContent = countdown;
+                }, 1000);
+            }
+
+            function activateReply(messageId, senderName) {
+                activeReply = { id: messageId, name: senderName };
+                const container = document.getElementById('chat-replying-to-container');
+                container.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span>Membalas <strong>${senderName}</strong></span>
+                        <button id="cancel-reply-btn" class="text-red-400 text-xl">&times;</button>
+                    </div>
+                `;
+                container.classList.remove('hidden');
+                document.getElementById('cancel-reply-btn').addEventListener('click', cancelReply);
+            }
+
+            function cancelReply() {
+                activeReply = null;
+                document.getElementById('chat-replying-to-container').classList.add('hidden');
+            }
+
+            async function sendChatMessage() {
+                const { db, collection, addDoc, serverTimestamp } = window.firebase;
+                const messageInput = document.getElementById('chat-message-input');
+                const text = messageInput.value.trim();
+                if (!text) return;
+
+                const messageData = {
+                    text,
+                    senderId: myPlayerId,
+                    senderName: myPlayerName,
+                    senderIsAdmin: isAdmin,
+                    senderIsDeveloper: isDeveloper,
+                    timestamp: serverTimestamp(),
+                };
+
+                if (activeReply) {
+                    messageData.replyTo = activeReply;
+                }
+
+                await addDoc(collection(db, "globalChat"), messageData);
+                messageInput.value = '';
+                cancelReply();
+            }
+
+            function listenToGlobalChat() {
+                const { db, collection, query, orderBy, limit, onSnapshot } = window.firebase;
+                const messagesList = document.getElementById('chat-messages-list');
+                const q = query(collection(db, "globalChat"), orderBy("timestamp", "desc"), limit(50));
+
+                if (unsubscribeFromGlobalChat) unsubscribeFromGlobalChat();
+                unsubscribeFromGlobalChat = onSnapshot(q, (snapshot) => {
+                    const currentScroll = messagesList.parentElement.scrollHeight - messagesList.parentElement.scrollTop;
+                    messagesList.innerHTML = '';
+                    snapshot.docs.reverse().forEach(doc => {
+                        const message = doc.data();
+                        const messageId = doc.id;
+                        messagesList.appendChild(renderChatMessage(message, messageId));
+                    });
+                    // Scroll to bottom only if user was already at the bottom
+                    if (currentScroll < messagesList.parentElement.clientHeight + 100) {
+                         messagesList.parentElement.scrollTop = messagesList.parentElement.scrollHeight;
+                    }
+                });
+            }
+
+            function renderChatMessage(message, messageId) {
+                const isMe = message.senderId === myPlayerId;
+                const li = document.createElement('li');
+                li.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+
+                let bubbleClass = 'user-bubble';
+                if (message.senderIsDeveloper) bubbleClass = isMe ? 'my-dev-bubble' : 'dev-bubble';
+                else if (message.senderIsAdmin) bubbleClass = isMe ? 'my-admin-bubble' : 'admin-bubble';
+                else if (isMe) bubbleClass = 'my-bubble';
+                
+                let roleTagHTML = '';
+                if (message.senderIsDeveloper) roleTagHTML = `<span class="dev-tag role-tag ml-2">Developer</span>`;
+                else if (message.senderIsAdmin) roleTagHTML = `<span class="admin-tag role-tag ml-2">Admin</span>`;
+
+                let replyHTML = '';
+                if(message.replyTo) {
+                    replyHTML = `<div class="reply-content">
+                        <strong>${message.replyTo.name}</strong>
+                    </div>`;
+                }
+
+                li.innerHTML = `
+                    <div class="chat-bubble ${bubbleClass}">
+                        <div class="flex justify-between items-center gap-4 mb-1">
+                           <strong class="text-sm flex items-center">${isMe ? 'Anda' : message.senderName} ${roleTagHTML}</strong>
+                           <button class="reply-btn text-xs opacity-50 hover:opacity-100" data-messageid="${messageId}" data-sendername="${message.senderName}"><i class="fa-solid fa-reply"></i></button>
+                        </div>
+                        ${replyHTML}
+                        <p>${message.text.replace(/\n/g, '<br>')}</p>
+                    </div>
+                `;
+                return li;
+            }
 
             // --- Match Logic ---
             async function createMatch(matchType) {
                 showOverlay('app-loader', true, 'Membuat room...');
                 const { db, collection, addDoc, serverTimestamp } = window.firebase;
-                const textToType = matchType === 'wpm' ? textSamples.en[Math.floor(Math.random() * textSamples.en.length)] : '';
+                
                 try {
                     const matchRef = await addDoc(collection(db, "matches"), {
-                        matchType, textToType, cpsDuration: 5, status: "waiting", createdAt: serverTimestamp(), hostId: myPlayerId,
+                        matchType, 
+                        textToType: '',
+                        language: 'en',
+                        cpsDuration: selectedCpsDuration, 
+                        status: "waiting", 
+                        createdAt: serverTimestamp(), 
+                        hostId: myPlayerId,
                         players: { [myPlayerId]: { name: myPlayerName, score: 0, progress: 0, finished: false, isDeveloper, isAdmin, accuracy: 0, duration: 0 } }
                     });
                     enterMatchRoom(matchRef.id);
@@ -920,12 +1119,18 @@
             
             async function joinRandomMatch() {
                 showOverlay('app-loader', true, 'Mencari pertandingan...');
-                const { db, collection, query, where, getDocs, limit } = window.firebase;
+                const { db, collection, query, where, getDocs, limit, serverTimestamp } = window.firebase;
                 try {
-                    const q = query(collection(db, "matches"), where("status", "==", "waiting"), limit(10));
+                    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+                    const q = query(
+                        collection(db, "matches"), 
+                        where("status", "==", "waiting"),
+                        where("createdAt", ">", tenMinutesAgo),
+                        limit(10)
+                    );
                     const querySnapshot = await getDocs(q);
                     if (querySnapshot.empty) {
-                        showToast("Tidak ada pertandingan yang tersedia. Coba buat satu!");
+                        showToast("Tidak ada pertandingan yang tersedia. Coba buat satu!", "info");
                     } else {
                         const randomDoc = querySnapshot.docs[Math.floor(Math.random() * querySnapshot.docs.length)];
                         await joinMatch(randomDoc.id);
@@ -943,7 +1148,7 @@
                 localGameStarted = false;
                 toggleMainTabs(false);
                 window.location.hash = `match=${matchId}`;
-                switchView('onlineTester', ['soloTester', 'practicalTester', 'onlineTester']);
+                switchView('onlineTester', ['soloTester', 'practicalTester', 'onlineTester', 'globalChat']);
                 switchView('matchRoom', ['lobby', 'matchRoom']);
                 renderMatchRoomSkeleton();
                 listenToMatch(matchId);
@@ -955,14 +1160,14 @@
                 if (unsubscribeFromMatch) unsubscribeFromMatch();
                 unsubscribeFromMatch = onSnapshot(matchDocRef, (doc) => {
                     if (!doc.exists()) {
-                        if(views.resultsModal.classList.contains('active')) return;
+                        if(views.resultsModal.style.display === 'flex') return;
                         showToast("Pertandingan telah dibubarkan.", "error");
                         leaveMatch(true);
                         return;
                     }
                     const matchData = doc.data();
                     onlineState = matchData;
-                    if (views.resultsModal.classList.contains('active')) return;
+                    if (views.resultsModal.style.display === 'flex') return;
                     updateMatchRoomUI(matchData);
                     if (matchData.status === 'starting' && !localGameStarted) {
                         showCountdown();
@@ -1006,7 +1211,9 @@
                 onlineState = {};
                 localGameStarted = false;
                 toggleMainTabs(true);
-                window.location.hash = '';
+                if (window.location.hash) {
+                    history.pushState("", document.title, window.location.pathname + window.location.search);
+                }
                 switchView('mainApp');
                 onlineTabBtn.click();
             }
@@ -1048,16 +1255,49 @@
                 document.getElementById('match-room-title').textContent = `Ruang ${data.matchType.toUpperCase()}`;
                 document.getElementById('match-id-display').value = currentMatchId;
                 const progressContainer = document.getElementById('player-progress-container');
-                progressContainer.innerHTML = Object.keys(data.players).map(pid => renderPlayerProgress(pid, data.players[pid], data.hostId)).join('');
+                progressContainer.innerHTML = Object.keys(data.players).map(pid => renderPlayerProgress(pid, data.players[pid], data.hostId, data.matchType)).join('');
                 if (!localGameStarted) {
                     const gameAreaContainer = document.getElementById('game-area-container');
                     let gameAreaHTML = '';
+                    const isHost = data.hostId === myPlayerId;
+
                     if (data.matchType === 'wpm') {
-                        gameAreaHTML = `<div id="online-text-container" class="bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg shadow-lg relative min-h-[140px] flex items-center border border-gray-700"><p id="online-text-display" class="text-2xl leading-relaxed tracking-wide text-slate-400 select-none">Menunggu host memulai pertandingan...</p><input id="online-input-field" type="text" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-default" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" disabled></div>`;
-                    } else {
-                        gameAreaHTML = `<div id="online-click-area" class="w-full h-64 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg flex flex-col items-center justify-center text-center border-2 border-dashed border-cyan-500/50 relative overflow-hidden cursor-not-allowed"><p id="online-click-area-text" class="text-3xl font-bold text-white">Menunggu host memulai pertandingan...</p><p id="online-cps-timer-display" class="text-5xl font-black text-lime-400 mt-4">${data.cpsDuration}s</p></div>`;
+                        const langIdActive = data.language === 'id' ? 'active' : '';
+                        const langEnActive = data.language === 'en' ? 'active' : '';
+                        const hostLangSelector = isHost ? `
+                            <div class="flex justify-center gap-2 mb-4">
+                                <button data-lang="id" class="lang-select-btn mode-btn px-4 py-1 rounded ${langIdActive}">ID</button>
+                                <button data-lang="en" class="lang-select-btn mode-btn px-4 py-1 rounded ${langEnActive}">EN</button>
+                            </div>` : `<p class="text-center text-slate-400 mb-4">Bahasa: ${data.language.toUpperCase()}</p>`;
+                        
+                        gameAreaHTML = `${hostLangSelector}<div id="online-text-container" class="bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg shadow-lg relative min-h-[140px] flex items-center border border-gray-700"><p id="online-text-display" class="text-2xl leading-relaxed tracking-wide text-slate-400 select-none">Menunggu host memulai pertandingan...</p><input id="online-input-field" type="text" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-default" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" disabled></div>`;
+                    } else { // CPS Match
+                        const durations = [5, 10, 15, 20];
+                        const hostCpsSelector = isHost ? `
+                            <div class="flex justify-center gap-2 mb-4">
+                                ${durations.map(d => `<button data-duration="${d}" class="cps-duration-select-btn mode-btn px-4 py-1 rounded ${data.cpsDuration === d ? 'active' : ''}">${d}s</button>`).join('')}
+                            </div>` : `<p class="text-center text-slate-400 mb-4">Durasi: ${data.cpsDuration} detik</p>`;
+
+                        gameAreaHTML = `${hostCpsSelector}<div id="online-click-area" class="w-full h-64 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg flex flex-col items-center justify-center text-center border-2 border-dashed border-cyan-500/50 relative overflow-hidden cursor-not-allowed"><p id="online-click-area-text" class="text-3xl font-bold text-white">Menunggu host memulai pertandingan...</p><p id="online-cps-timer-display" class="text-5xl font-black text-lime-400 mt-4">${data.cpsDuration}s</p></div>`;
                     }
                     gameAreaContainer.innerHTML = gameAreaHTML;
+                    if (isHost) {
+                        document.querySelectorAll('.lang-select-btn').forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
+                                const lang = e.target.dataset.lang;
+                                const { db, doc, updateDoc } = window.firebase;
+                                await updateDoc(doc(db, "matches", currentMatchId), { language: lang });
+                            });
+                        });
+                        document.querySelectorAll('.cps-duration-select-btn').forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
+                                const duration = parseInt(e.target.dataset.duration, 10);
+                                selectedCpsDuration = duration;
+                                const { db, doc, updateDoc } = window.firebase;
+                                await updateDoc(doc(db, "matches", currentMatchId), { cpsDuration: duration });
+                            });
+                        });
+                    }
                 }
                 const controlsContainer = document.getElementById('match-controls');
                 const isHost = data.hostId === myPlayerId;
@@ -1072,17 +1312,21 @@
                 }
             }
             
-            function renderPlayerProgress(pid, player, hostId) {
+            function renderPlayerProgress(pid, player, hostId, matchType) {
                 const isMe = pid === myPlayerId;
                 const isHost = pid === hostId;
                 const devTagHTML = player.isDeveloper ? `<span class="dev-tag role-tag ml-2">Developer</span>` : '';
                 const adminTagHTML = player.isAdmin ? `<span class="admin-tag role-tag ml-2">Admin</span>` : '';
-                return `<div class="p-3 rounded-lg ${isMe ? 'bg-cyan-900/50 border border-cyan-500' : 'bg-gray-700/50'}"><div class="flex justify-between items-center mb-1"><span class="font-bold flex items-center ${isMe ? 'text-lime-400' : 'text-white'}">${player.name} ${isMe ? '(Anda)' : ''} ${isHost ? '<i class="fa-solid fa-crown text-yellow-400 ml-2" title="Host"></i>' : ''} ${devTagHTML} ${adminTagHTML} ${player.finished ? '<i class="fa-solid fa-check-circle text-green-400 ml-2"></i>' : ''}</span><span class="font-bold text-white">${player.score} ${onlineState.matchType === 'wpm' ? 'WPM' : 'CPS'}</span></div><div class="w-full bg-gray-600 rounded-full h-4"><div class="bg-gradient-to-r from-cyan-500 to-lime-400 h-4 rounded-full text-xs text-right text-black font-bold pr-2 flex items-center justify-end transition-all duration-300" style="width: ${player.progress}%">${Math.round(player.progress)}%</div></div></div>`;
+                return `<div class="p-3 rounded-lg ${isMe ? 'bg-cyan-900/50 border border-cyan-500' : 'bg-gray-700/50'}"><div class="flex justify-between items-center mb-1"><span class="font-bold flex items-center ${isMe ? 'text-lime-400' : 'text-white'}">${player.name} ${isMe ? '(Anda)' : ''} ${isHost ? '<i class="fa-solid fa-crown text-yellow-400 ml-2" title="Host"></i>' : ''} ${devTagHTML} ${adminTagHTML} ${player.finished ? '<i class="fa-solid fa-check-circle text-green-400 ml-2"></i>' : ''}</span><span class="font-bold text-white">${player.score} ${matchType === 'wpm' ? 'WPM' : 'CPS'}</span></div><div class="w-full bg-gray-600 rounded-full h-4"><div class="bg-gradient-to-r from-cyan-500 to-lime-400 h-4 rounded-full text-xs text-right text-black font-bold pr-2 flex items-center justify-end transition-all duration-300" style="width: ${player.progress}%">${Math.round(player.progress)}%</div></div></div>`;
             }
 
             async function startMatch() {
-                const { db, doc, updateDoc } = window.firebase;
-                await updateDoc(doc(db, "matches", currentMatchId), { status: "starting" });
+                const { db, doc, updateDoc, getDoc } = window.firebase;
+                const matchDocRef = doc(db, "matches", currentMatchId);
+                const matchDoc = await getDoc(matchDocRef);
+                const matchData = matchDoc.data();
+                const textToType = matchData.matchType === 'wpm' ? textSamples[matchData.language][Math.floor(Math.random() * textSamples[matchData.language].length)] : '';
+                await updateDoc(matchDocRef, { status: "starting", textToType });
             }
             
             function showResults(data) {
@@ -1099,10 +1343,13 @@
                 });
                 tableHTML += `</tbody></table>`;
                 tableContainer.innerHTML = tableHTML;
-                switchView('resultsModal');
+                showOverlay('results-modal', true);
             }
 
-            backToLobbyBtn.addEventListener('click', () => { switchView('resultsModal'); leaveMatch(true); });
+            backToLobbyBtn.addEventListener('click', () => { 
+                showOverlay('results-modal', false);
+                leaveMatch(false);
+            });
 
             // ONLINE WPM GAME LOGIC
             function initializeOnlineWpmGame(data) {
@@ -1120,6 +1367,7 @@
                     if (testFinished) return;
                     testFinished = true;
                     inputField.blur();
+                    inputField.disabled = true;
                     const duration = (new Date() - startTime) / 1000;
                     const correctChars = currentIndex - errorCount;
                     const wpm = duration > 0 ? Math.round(((correctChars / 5) / (duration / 60))) : 0;
@@ -1196,23 +1444,31 @@
                 const timerDisplay = document.getElementById('online-cps-timer-display');
                 const clickAreaText = document.getElementById('online-click-area-text');
                 if (!clickArea || !timerDisplay) return;
+
                 clickArea.classList.remove('cursor-not-allowed');
+                clickArea.style.cursor = 'pointer';
                 clickAreaText.textContent = 'KLIK SECEPATNYA!';
+                
                 let clickCount = 0, testFinished = false, timeLeft = data.cpsDuration;
+                let startTime = Date.now();
                 
                 if (localCpsTimer) clearInterval(localCpsTimer);
+
                 localCpsTimer = setInterval(() => {
                     timeLeft--;
                     timerDisplay.textContent = `${timeLeft}s`;
                     if (timeLeft <= 0) {
                         clearInterval(localCpsTimer);
-                        testFinished = true;
-                        clickArea.style.cursor = 'not-allowed';
-                        finishTest();
+                        if (!testFinished) finishTest();
                     }
                 }, 1000);
                 
                 async function finishTest() {
+                    if (testFinished) return;
+                    testFinished = true;
+                    clickArea.style.cursor = 'not-allowed';
+                    clickAreaText.textContent = 'Waktu Habis!';
+
                     const duration = data.cpsDuration;
                     const cps = clickCount / duration;
                     if (!currentMatchId) return;
@@ -1228,9 +1484,25 @@
                     } catch(e) { console.log("Gagal update progress akhir, mungkin match sudah selesai.")}
                 }
 
-                clickArea.addEventListener('click', (e) => {
+                async function updateMyProgress() {
+                    if (testFinished || !currentMatchId) return;
+                    const elapsedTime = (Date.now() - startTime) / 1000;
+                    const progress = (elapsedTime / data.cpsDuration) * 100;
+                    const currentCPS = elapsedTime > 0 ? clickCount / elapsedTime : 0;
+
+                    const { db, doc, updateDoc } = window.firebase;
+                     try {
+                        await updateDoc(doc(db, "matches", currentMatchId), {
+                            [`players.${myPlayerId}.score`]: parseFloat(currentCPS.toFixed(2)),
+                            [`players.${myPlayerId}.progress`]: Math.min(100, progress),
+                        });
+                    } catch (e) { console.log("Gagal update progress, mungkin match sudah selesai.")}
+                }
+
+                clickArea.onclick = (e) => {
                     if(testFinished) return;
                     clickCount++;
+                    updateMyProgress();
                     const ripple = document.createElement('span');
                     ripple.className = 'ripple';
                     clickArea.appendChild(ripple);
@@ -1238,7 +1510,7 @@
                     ripple.style.left = `${e.clientX - rect.left}px`;
                     ripple.style.top = `${e.clientY - rect.top}px`;
                     ripple.onanimationend = () => ripple.remove();
-                });
+                };
             }
             
             // ATTACH LOBBY LISTENERS
