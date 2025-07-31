@@ -55,10 +55,23 @@
         /* Role Tags Style */
         .role-tag { font-weight: bold; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; }
         @keyframes gradient-animation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        .dev-tag { background: linear-gradient(90deg, #a3e635, #22d3ee, #a3e635); background-size: 200% 200%; color: #111827; animation: gradient-animation 3s ease infinite; }
+        
         .admin-tag { background: linear-gradient(90deg, #facc15, #fb923c, #facc15); background-size: 200% 200%; color: #111827; animation: gradient-animation 4s ease infinite; }
         .user-tag { background-color: #4b5563; color: #d1d5db; }
 
+        /* NEW: Enhanced Developer Tag */
+        @keyframes dev-glow {
+            0%, 100% { box-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff; }
+            50% { box-shadow: 0 0 10px #d946ef, 0 0 15px #d946ef; }
+        }
+        .dev-tag {
+            background: linear-gradient(90deg, #22d3ee, #d946ef, #ec4899, #22d3ee);
+            background-size: 300% 300%;
+            color: white;
+            animation: gradient-animation 3s ease infinite, dev-glow 3s ease-in-out infinite;
+            text-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        
         /* Overlays & Modals */
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(17, 24, 39, 0.8); backdrop-filter: blur(5px); z-index: 10000; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 1rem; }
         .modal-card { background-color: #1f2937; border: 1px solid #374151; border-radius: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 500px; }
@@ -73,7 +86,7 @@
         .toast.info { background-color: #06b6d4; }
         .toast.error { background-color: #ef4444; }
         .special-toast { padding: 1rem 1.5rem; border-radius: 0.5rem; color: white; font-weight: 500; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: special-toast-in 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards, toast-out 0.5s forwards 7.5s; opacity: 0; transform: translateY(20px); border-left: 5px solid; max-width: 400px; text-align: center; }
-        .special-toast.dev-message { background: linear-gradient(to right, #1f2937, #374151); border-color: #22d3ee; }
+        .special-toast.dev-message { background: linear-gradient(to right, #1f2937, #374151); border-color: #d946ef; }
         .special-toast.admin-message { background: linear-gradient(to right, #1f2937, #374151); border-color: #facc15; }
         @keyframes toast-in { to { opacity: 1; transform: translateY(0); } }
         @keyframes toast-out { to { opacity: 0; transform: translateY(20px); } }
@@ -81,15 +94,53 @@
 
         /* Global Chat */
         #global-chat-view { height: calc(100vh - 250px); max-height: 600px; }
-        .chat-bubble { max-width: 75%; padding: 0.75rem 1rem; border-radius: 1.25rem; word-wrap: break-word; }
+        .chat-bubble { max-width: 75%; padding: 0.75rem 1rem; border-radius: 1.25rem; word-wrap: break-word; position: relative; }
         .chat-bubble.user-bubble { background-color: #374151; border-bottom-left-radius: 0.25rem; }
         .chat-bubble.my-bubble { background-color: #06b6d4; border-bottom-right-radius: 0.25rem; }
         .chat-bubble.admin-bubble { background: linear-gradient(135deg, #facc15, #fb923c); color: #1f2937; border-bottom-left-radius: 0.25rem; }
         .chat-bubble.my-admin-bubble { background: linear-gradient(135deg, #facc15, #fb923c); color: #1f2937; border-bottom-right-radius: 0.25rem; }
-        .chat-bubble.dev-bubble { background: linear-gradient(135deg, #a3e635, #22d3ee); color: #111827; border-bottom-left-radius: 0.25rem; transform: scale(1.02); box-shadow: 0 0 10px #22d3ee80; }
-        .chat-bubble.my-dev-bubble { background: linear-gradient(135deg, #a3e635, #22d3ee); color: #111827; border-bottom-right-radius: 0.25rem; transform: scale(1.02); box-shadow: 0 0 10px #22d3ee80; }
+        
+        /* NEW: Enhanced Developer Chat Bubble */
+        @keyframes animated-border {
+            0% { border-color: #22d3ee; }
+            33% { border-color: #d946ef; }
+            66% { border-color: #ec4899; }
+            100% { border-color: #22d3ee; }
+        }
+        .dev-bubble-base {
+            background: linear-gradient(135deg, #1e3a8a, #111827);
+            color: #e5e7eb;
+            border-width: 1px;
+            border-style: solid;
+            animation: animated-border 4s linear infinite;
+            box-shadow: 0 0 15px rgba(217, 70, 239, 0.4);
+        }
+        .chat-bubble.dev-bubble {
+            border-bottom-left-radius: 0.25rem;
+        }
+        .chat-bubble.my-dev-bubble {
+            border-bottom-right-radius: 0.25rem;
+        }
+
         .reply-content { background-color: rgba(0,0,0,0.2); padding: 0.25rem 0.5rem; margin-bottom: 0.25rem; border-left: 3px solid #06b6d4; border-radius: 4px; font-size: 0.8rem; opacity: 0.8; }
-    
+        
+        /* NEW: Chat Animations */
+        @keyframes new-message-anim {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .new-message {
+            animation: new-message-anim 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        #typing-indicator {
+            height: 24px;
+            padding: 0 1rem;
+            color: #9ca3af;
+            font-style: italic;
+            font-size: 0.9rem;
+            transition: opacity 0.3s;
+        }
+
         /* Developer Cheat Button */
         #dev-cheat-btn {
             position: fixed;
@@ -217,6 +268,7 @@
                             <!-- Messages will be injected here -->
                         </ul>
                     </div>
+                    <div id="typing-indicator"></div>
                     <div id="chat-replying-to-container" class="hidden p-2 bg-gray-700/50 rounded-md text-sm"></div>
                     <div class="flex gap-2">
                         <textarea id="chat-message-input" placeholder="Ketik pesan..." rows="1" class="flex-grow bg-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 resize-none"></textarea>
@@ -335,6 +387,8 @@
             let unsubscribeFromBanned = null;
             let unsubscribeFromMessages = null;
             let unsubscribeFromBan = null;
+            let unsubscribeFromGlobalChat = null;
+            let unsubscribeFromTyping = null;
             let onlineState = {};
             let localCpsTimer = null;
             let localGameStarted = false;
@@ -342,7 +396,8 @@
             let activeReply = null;
             let chatRefreshCountdownInterval = null;
             let selectedCpsDuration = 5;
-            let devCheatInterval = null; // For developer cheat
+            let devCheatInterval = null;
+            let typingTimeout = null;
 
             const textSamples = {
                 id: [
@@ -354,7 +409,12 @@
                     "Energi terbarukan seperti tenaga surya dan angin menjadi solusi menjanjikan untuk mengatasi krisis iklim. Investasi dalam infrastruktur hijau dan kebijakan yang mendukung transisi energi bersih adalah langkah vital untuk mencapai pembangunan berkelanjutan dan menjaga kelestarian planet kita untuk generasi mendatang.",
                     "Mitigasi bencana adalah serangkaian upaya untuk mengurangi risiko bencana, baik melalui pembangunan fisik maupun penyadaran dan peningkatan kapasitas masyarakat. Sistem peringatan dini yang efektif dan tata ruang yang berbasis risiko dapat secara signifikan mengurangi jumlah korban jiwa dan kerugian material ketika bencana terjadi.",
                     "Keberagaman budaya Indonesia adalah aset bangsa yang tak ternilai harganya. Setiap suku memiliki tradisi, bahasa, dan seni yang unik, menciptakan mozaik yang indah dan dinamis. Menjaga toleransi dan saling menghormati antarbudaya adalah kunci untuk mempertahankan persatuan dan kesatuan dalam bingkai Bhinneka Tunggal Ika.",
-                    "Ekonomi digital terus menunjukkan pertumbuhan yang pesat, didorong oleh inovasi di bidang e-commerce, fintech, dan layanan on-demand. Transformasi ini membuka peluang baru bagi para pelaku usaha mikro, kecil, dan menengah untuk memperluas jangkauan pasar mereka. Namun, literasi digital dan akses internet yang merata masih menjadi pekerjaan rumah yang harus diselesaikan."
+                    "Ekonomi digital terus menunjukkan pertumbuhan yang pesat, didorong oleh inovasi di bidang e-commerce, fintech, dan layanan on-demand. Transformasi ini membuka peluang baru bagi para pelaku usaha mikro, kecil, dan menengah untuk memperluas jangkauan pasar mereka. Namun, literasi digital dan akses internet yang merata masih menjadi pekerjaan rumah yang harus diselesaikan.",
+                    "Sistem pencernaan manusia adalah jaringan organ yang kompleks dan bekerja sama untuk mengolah makanan menjadi energi. Proses ini dimulai di mulut, di mana enzim dalam air liur mulai memecah karbohidrat. Perjalanan makanan berlanjut melalui kerongkongan menuju lambung, tempat asam dan enzim lanjutan mengurai protein menjadi komponen yang lebih kecil dan sederhana.",
+                    "Hutan hujan tropis sering disebut sebagai paru-paru dunia karena kemampuannya yang luar biasa dalam menyerap karbon dioksida dan menghasilkan oksigen. Selain itu, hutan ini merupakan rumah bagi lebih dari setengah spesies flora dan fauna di planet ini. Deforestasi akibat pembalakan liar dan konversi lahan menjadi ancaman utama bagi keberlangsungan ekosistem vital ini.",
+                    "Arsitektur Candi Borobudur merupakan mahakarya yang memadukan unsur seni, religi, dan teknologi kuno dari peradaban Jawa. Struktur punden berundak yang megah ini dihiasi dengan ribuan panel relief yang menceritakan ajaran Buddha dan kehidupan masyarakat pada masanya. Setiap tingkat candi melambangkan tahapan perjalanan spiritual manusia untuk mencapai pencerahan sempurna atau nirwana.",
+                    "Pasar modal memainkan peran penting dalam perekonomian suatu negara dengan memfasilitasi aliran dana dari investor kepada perusahaan yang membutuhkan modal. Instrumen seperti saham dan obligasi memungkinkan perusahaan untuk melakukan ekspansi bisnis, sementara investor berpotensi mendapatkan imbal hasil dari pertumbuhan perusahaan tersebut. Regulasi yang ketat diperlukan untuk menjaga stabilitas dan keadilan pasar.",
+                    "Gerhana matahari total adalah fenomena astronomi langka yang terjadi ketika posisi bulan berada tepat di antara bumi dan matahari. Bayangan bulan yang jatuh ke permukaan bumi menyebabkan sebagian wilayah menjadi gelap gulita selama beberapa menit. Momen ini memberikan kesempatan unik bagi para ilmuwan untuk mempelajari korona, yaitu lapisan atmosfer terluar matahari yang biasanya tidak terlihat."
                 ],
                 en: [
                     "The intricate tapestry of the cosmos is woven with billions of galaxies, each containing countless stars and planetary systems. Astronomers use powerful telescopes to peer across vast distances, studying the light from distant objects to understand the origins of the universe. Discoveries like dark matter and dark energy reveal that we still have much to learn about the fundamental forces that govern reality.",
@@ -365,7 +425,12 @@
                     "The study of psychology reveals the profound complexity of the human mind. From cognitive biases that shape our decisions to the social dynamics that influence our behavior, understanding these principles can lead to greater self-awareness and improved interpersonal relationships. Mental health is increasingly recognized as a vital component of overall well-being.",
                     "Climate change is not a distant threat but a present reality, with observable effects on weather patterns, sea levels, and ecosystems. International cooperation and individual action are both critical to curb greenhouse gas emissions and transition to a low-carbon economy. The choices we make today will determine the health of our planet for generations to come.",
                     "The principles of aerodynamics govern the flight of everything from bumblebees to jumbo jets. Understanding concepts like lift, drag, thrust, and weight is essential for aircraft design. Wind tunnels and computational fluid dynamics are crucial tools for testing and refining new aeronautical innovations.",
-                    "Artificial intelligence is rapidly transforming the creative industries. Generative models can now produce original text, images, and music that are often indistinguishable from human-created works. This raises fascinating questions about the nature of creativity, authorship, and the future role of human artists in a technologically advanced world."
+                    "Artificial intelligence is rapidly transforming the creative industries. Generative models can now produce original text, images, and music that are often indistinguishable from human-created works. This raises fascinating questions about the nature of creativity, authorship, and the future role of human artists in a technologically advanced world.",
+                    "The global supply chain is a complex network of organizations, people, activities, information, and resources involved in moving a product or service from supplier to customer. Recent events have highlighted its fragility, prompting businesses to explore strategies like reshoring and diversification to build greater resilience against future disruptions and geopolitical shifts.",
+                    "Photosynthesis is the remarkable process by which green plants, algae, and some bacteria convert light energy into chemical energy. Through a series of reactions, they use sunlight, water, and carbon dioxide to create glucose, which serves as their food, and release oxygen as a byproduct. This fundamental process sustains nearly all life on Earth by providing the primary source of organic matter and oxygen.",
+                    "The Renaissance was a fervent period of European cultural, artistic, political, and economic rebirth following the Middle Ages. Generally described as taking place from the 14th century to the 17th century, the Renaissance promoted the rediscovery of classical philosophy, literature, and art. This era produced some of the greatest thinkers, authors, and artists in human history.",
+                    "Cryptography is the practice and study of techniques for secure communication in the presence of third parties called adversaries. Modern cryptography is heavily based on mathematical theory and computer science practice; cryptographic algorithms are designed around computational hardness assumptions, making such algorithms hard to break in practice by any adversary.",
+                    "The human brain is an astonishingly complex organ composed of billions of interconnected neurons and glial cells. It is the control center of the nervous system, responsible for thought, memory, emotion, touch, motor skills, vision, breathing, and every process that regulates our body. Neuroscientists are continuously working to unravel the mysteries of how these intricate networks give rise to consciousness and cognition."
                 ]
             };
 
@@ -974,6 +1039,7 @@
                 
                 sendBtn.addEventListener('click', sendChatMessage);
                 messageInput.addEventListener('keyup', (e) => {
+                    updateTypingStatus();
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         sendChatMessage();
@@ -992,8 +1058,11 @@
 
             function startGlobalChatSystem() {
                 if (chatRefreshCountdownInterval) clearInterval(chatRefreshCountdownInterval);
+                if (unsubscribeFromGlobalChat) unsubscribeFromGlobalChat();
+                if (unsubscribeFromTyping) unsubscribeFromTyping();
 
                 listenToGlobalChat(); // Initial fetch
+                listenForTyping();
                 
                 let countdown = 180;
                 const timerEl = document.getElementById('chat-refresh-timer');
@@ -1028,7 +1097,7 @@
             }
 
             async function sendChatMessage() {
-                const { db, collection, addDoc, serverTimestamp } = window.firebase;
+                const { db, collection, addDoc, serverTimestamp, doc, deleteDoc } = window.firebase;
                 const messageInput = document.getElementById('chat-message-input');
                 const text = messageInput.value.trim();
                 if (!text) return;
@@ -1050,7 +1119,9 @@
                     await addDoc(collection(db, "globalChat"), messageData);
                     messageInput.value = '';
                     cancelReply();
-                    listenToGlobalChat(); // Manually refresh after sending
+                    // Stop broadcasting typing status
+                    if (typingTimeout) clearTimeout(typingTimeout);
+                    deleteDoc(doc(db, "typingStatus", myPlayerId));
                 } catch (error) {
                     console.error("Error sending chat message:", error);
                     showToast("Gagal mengirim pesan.", "error");
@@ -1058,26 +1129,35 @@
             }
 
             function listenToGlobalChat() {
-                const { db, collection, query, orderBy, limit, getDocs } = window.firebase;
+                const { db, collection, query, orderBy, limit, onSnapshot } = window.firebase;
                 const messagesList = document.getElementById('chat-messages-list');
                 const q = query(collection(db, "globalChat"), orderBy("timestamp", "desc"), limit(50));
+                
+                if (unsubscribeFromGlobalChat) unsubscribeFromGlobalChat();
 
-                getDocs(q).then(snapshot => {
+                unsubscribeFromGlobalChat = onSnapshot(q, (snapshot) => {
                     const shouldScroll = messagesList.parentElement.scrollTop + messagesList.parentElement.clientHeight >= messagesList.parentElement.scrollHeight - 50;
                     
-                    messagesList.innerHTML = ''; // Clear current messages
-                    
+                    const existingMessages = new Set([...messagesList.children].map(li => li.dataset.messageId));
+
                     snapshot.docs.reverse().forEach(doc => {
-                        const message = doc.data();
                         const messageId = doc.id;
-                        messagesList.appendChild(renderChatMessage(message, messageId));
+                        if (!existingMessages.has(messageId)) {
+                            const message = doc.data();
+                            const li = renderChatMessage(message, messageId);
+                            li.classList.add('new-message');
+                            messagesList.appendChild(li);
+                        }
                     });
+                    
+                    // Cleanup old messages if list exceeds limit
+                    while(messagesList.children.length > 50) {
+                        messagesList.removeChild(messagesList.firstChild);
+                    }
                     
                     if (shouldScroll) {
                          messagesList.parentElement.scrollTop = messagesList.parentElement.scrollHeight;
                     }
-                }).catch(error => {
-                    console.error("Error fetching global chat:", error);
                 });
             }
 
@@ -1085,9 +1165,10 @@
                 const isMe = message.senderId === myPlayerId;
                 const li = document.createElement('li');
                 li.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+                li.dataset.messageId = messageId;
 
                 let bubbleClass = 'user-bubble';
-                if (message.senderIsDeveloper) bubbleClass = isMe ? 'my-dev-bubble' : 'dev-bubble';
+                if (message.senderIsDeveloper) bubbleClass = isMe ? 'my-dev-bubble dev-bubble-base' : 'dev-bubble dev-bubble-base';
                 else if (message.senderIsAdmin) bubbleClass = isMe ? 'my-admin-bubble' : 'admin-bubble';
                 else if (isMe) bubbleClass = 'my-bubble';
                 
@@ -1114,6 +1195,57 @@
                 `;
                 return li;
             }
+            
+            async function updateTypingStatus() {
+                const { db, doc, setDoc, deleteDoc, serverTimestamp } = window.firebase;
+                const typingRef = doc(db, "typingStatus", myPlayerId);
+
+                if (typingTimeout) clearTimeout(typingTimeout);
+
+                const messageInput = document.getElementById('chat-message-input');
+                if (messageInput.value.trim().length > 0) {
+                    await setDoc(typingRef, {
+                        name: myPlayerName,
+                        timestamp: serverTimestamp()
+                    });
+
+                    typingTimeout = setTimeout(async () => {
+                        await deleteDoc(typingRef);
+                    }, 3000); // User is considered not typing after 3 seconds
+                } else {
+                    await deleteDoc(typingRef);
+                }
+            }
+
+            function listenForTyping() {
+                const { db, collection, query, where, onSnapshot } = window.firebase;
+                const typingIndicator = document.getElementById('typing-indicator');
+                const threeSecondsAgo = new Date(Date.now() - 3000);
+
+                const q = query(collection(db, "typingStatus"), where("timestamp", ">", threeSecondsAgo));
+
+                if (unsubscribeFromTyping) unsubscribeFromTyping();
+
+                unsubscribeFromTyping = onSnapshot(q, (snapshot) => {
+                    const typers = [];
+                    snapshot.forEach(doc => {
+                        if (doc.id !== myPlayerId) {
+                            typers.push(doc.data().name);
+                        }
+                    });
+
+                    if (typers.length === 0) {
+                        typingIndicator.textContent = '';
+                    } else if (typers.length === 1) {
+                        typingIndicator.textContent = `${typers[0]} sedang mengetik...`;
+                    } else if (typers.length === 2) {
+                        typingIndicator.textContent = `${typers[0]} dan ${typers[1]} sedang mengetik...`;
+                    } else {
+                        typingIndicator.textContent = `${typers[0]} dan ${typers.length - 1} lainnya sedang mengetik...`;
+                    }
+                });
+            }
+
 
             // --- Match Logic ---
             async function createMatch(matchType) {
@@ -1538,9 +1670,9 @@
                 }
 
                 function startWpmCheat() {
-                    const typingSpeed = 60000 / (200 * 5); // ms per character for 200 WPM
+                    const typingSpeed = 30; // ms per character for 200 WPM (60000ms / (200wpm * 5char/w))
                     devCheatInterval = setInterval(() => {
-                        if (currentIndex >= text.length -1) {
+                        if (currentIndex >= text.length -1 || testFinished) {
                             finishTest();
                             return;
                         }
