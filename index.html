@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TyperID v14.1 - The Ultimate Training Hub</title>
+    <title>TyperID v14.2 - The Ultimate Training Hub</title>
     
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌨️</text></svg>">
@@ -53,30 +53,49 @@
         @keyframes ripple { to { transform: scale(4); opacity: 0; } }
 
         /* Role Tags Style */
-        .role-tag { font-weight: bold; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; }
+        .role-tag { font-weight: bold; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; position: relative; overflow: hidden; }
         @keyframes gradient-animation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
         .admin-tag { background: linear-gradient(90deg, #facc15, #fb923c, #facc15); background-size: 200% 200%; color: #111827; animation: gradient-animation 4s ease infinite; }
         .user-tag { background-color: #4b5563; color: #d1d5db; }
 
-        /* NEW: Enhanced Developer Tag */
-        @keyframes dev-glow {
-            0%, 100% { box-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff; }
-            50% { box-shadow: 0 0 10px #d946ef, 0 0 15px #d946ef; }
+        /* NEW: Enhanced Developer Tag (Red Theme) */
+        @keyframes dev-glow-red {
+            0%, 100% { box-shadow: 0 0 6px #ef4444, 0 0 12px #ef4444; }
+            50% { box-shadow: 0 0 12px #f87171, 0 0 20px #f87171; }
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) skewX(-20deg); }
+            100% { transform: translateX(200%) skewX(-20deg); }
         }
         .dev-tag {
-            background: linear-gradient(90deg, #22d3ee, #d946ef, #ec4899, #22d3ee);
+            background: linear-gradient(90deg, #ef4444, #f87171, #dc2626, #ef4444);
             background-size: 300% 300%;
             color: white;
-            animation: gradient-animation 3s ease infinite, dev-glow 3s ease-in-out infinite;
-            text-shadow: 0 0 2px rgba(0,0,0,0.5);
+            animation: gradient-animation 3s ease infinite, dev-glow-red 3s ease-in-out infinite;
+            text-shadow: 0 0 3px rgba(0,0,0,0.6);
+        }
+        .dev-tag::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.4), rgba(255,255,255,0));
+            animation: shimmer 2.5s infinite;
         }
         
         /* Overlays & Modals */
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(17, 24, 39, 0.8); backdrop-filter: blur(5px); z-index: 10000; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 1rem; }
         .modal-card { background-color: #1f2937; border: 1px solid #374151; border-radius: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 500px; }
-        #countdown-text { font-size: 10rem; font-weight: 900; color: white; animation: countdown-zoom 1s ease-in-out infinite; }
-        @keyframes countdown-zoom { from { transform: scale(0.8); opacity: 0.5; } to { transform: scale(1.2); opacity: 1; } }
+        #countdown-text { font-size: 10rem; font-weight: 900; color: white; transition: transform 0.2s, opacity 0.2s; }
+        .countdown-zoom { animation: countdown-zoom-anim 1s ease-in-out; }
+        @keyframes countdown-zoom-anim {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
         #app-loader .spinner { width: 60px; height: 60px; border: 5px solid #4b5563; border-top-color: #22d3ee; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -86,7 +105,7 @@
         .toast.info { background-color: #06b6d4; }
         .toast.error { background-color: #ef4444; }
         .special-toast { padding: 1rem 1.5rem; border-radius: 0.5rem; color: white; font-weight: 500; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: special-toast-in 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards, toast-out 0.5s forwards 7.5s; opacity: 0; transform: translateY(20px); border-left: 5px solid; max-width: 400px; text-align: center; }
-        .special-toast.dev-message { background: linear-gradient(to right, #1f2937, #374151); border-color: #d946ef; }
+        .special-toast.dev-message { background: linear-gradient(to right, #1f2937, #374151); border-color: #ef4444; }
         .special-toast.admin-message { background: linear-gradient(to right, #1f2937, #374151); border-color: #facc15; }
         @keyframes toast-in { to { opacity: 1; transform: translateY(0); } }
         @keyframes toast-out { to { opacity: 0; transform: translateY(20px); } }
@@ -94,32 +113,24 @@
 
         /* Global Chat */
         #global-chat-view { height: calc(100vh - 250px); max-height: 600px; }
-        .chat-bubble { max-width: 75%; padding: 0.75rem 1rem; border-radius: 1.25rem; word-wrap: break-word; position: relative; }
-        .chat-bubble.user-bubble { background-color: #374151; border-bottom-left-radius: 0.25rem; }
-        .chat-bubble.my-bubble { background-color: #06b6d4; border-bottom-right-radius: 0.25rem; }
-        .chat-bubble.admin-bubble { background: linear-gradient(135deg, #facc15, #fb923c); color: #1f2937; border-bottom-left-radius: 0.25rem; }
-        .chat-bubble.my-admin-bubble { background: linear-gradient(135deg, #facc15, #fb923c); color: #1f2937; border-bottom-right-radius: 0.25rem; }
+        .chat-bubble { max-width: 75%; padding: 0.75rem 1rem; word-wrap: break-word; position: relative; }
+        .chat-bubble.user-bubble { background-color: #374151; border-radius: 1.25rem; border-bottom-left-radius: 0.25rem; }
+        .chat-bubble.my-bubble { background-color: #06b6d4; border-radius: 1.25rem; border-bottom-right-radius: 0.25rem; }
+        .chat-bubble.admin-bubble { background: linear-gradient(135deg, #facc15, #fb923c); color: #1f2937; border-radius: 1.25rem; border-bottom-left-radius: 0.25rem; }
+        .chat-bubble.my-admin-bubble { background: linear-gradient(135deg, #facc15, #fb923c); color: #1f2937; border-radius: 1.25rem; border-bottom-right-radius: 0.25rem; }
         
-        /* NEW: Enhanced Developer Chat Bubble */
-        @keyframes animated-border {
-            0% { border-color: #22d3ee; }
-            33% { border-color: #d946ef; }
-            66% { border-color: #ec4899; }
-            100% { border-color: #22d3ee; }
-        }
+        /* NEW: Enhanced Developer Chat Bubble (Cloud Shape) */
         .dev-bubble-base {
-            background: linear-gradient(135deg, #1e3a8a, #111827);
-            color: #e5e7eb;
-            border-width: 1px;
-            border-style: solid;
-            animation: animated-border 4s linear infinite;
-            box-shadow: 0 0 15px rgba(217, 70, 239, 0.4);
+            background: linear-gradient(135deg, #4c0519, #111827);
+            color: #fecaca;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+            border: 1px solid #ef4444;
         }
         .chat-bubble.dev-bubble {
-            border-bottom-left-radius: 0.25rem;
+            border-radius: 30px 30px 30px 5px;
         }
         .chat-bubble.my-dev-bubble {
-            border-bottom-right-radius: 0.25rem;
+            border-radius: 30px 30px 5px 30px;
         }
 
         .reply-content { background-color: rgba(0,0,0,0.2); padding: 0.25rem 0.5rem; margin-bottom: 0.25rem; border-left: 3px solid #06b6d4; border-radius: 4px; font-size: 0.8rem; opacity: 0.8; }
@@ -148,23 +159,25 @@
             right: 20px;
             z-index: 10001;
             padding: 8px 16px;
-            background: linear-gradient(90deg, #a3e635, #22d3ee);
-            color: #111827;
+            background: linear-gradient(90deg, #ef4444, #f87171);
+            color: white;
             font-weight: bold;
             border-radius: 8px;
-            border: none;
+            border: 1px solid #dc2626;
             cursor: pointer;
-            box-shadow: 0 0 15px rgba(34, 211, 238, 0.6);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
             transition: all 0.3s ease;
         }
         #dev-cheat-btn:hover {
             transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.8);
         }
         #dev-cheat-btn:disabled {
             background: #4b5563;
             color: #9ca3af;
             cursor: not-allowed;
             box-shadow: none;
+            border-color: #4b5563;
         }
     </style>
 </head>
@@ -197,7 +210,7 @@
     <div id="send-message-modal" class="overlay">
         <div class="modal-card p-6 flex flex-col gap-4">
             <h2 class="text-xl font-bold text-cyan-400">Kirim Pesan ke <span id="message-recipient-name"></span></h2>
-            <textarea id="message-input" class="w-full bg-gray-700 text-white p-2 rounded-md h-24" placeholder="Tulis pesan Anda..."></textarea>
+            <textarea id="message-input" class="w-full bg-gray-700 text-white p-2 rounded-md h-24 resize-none" placeholder="Tulis pesan Anda..."></textarea>
             <div class="flex gap-4">
                 <button id="cancel-send-message-btn" class="w-full py-2 bg-gray-600 rounded-md">Batal</button>
                 <button id="confirm-send-message-btn" class="w-full py-2 bg-cyan-500 rounded-md">Kirim</button>
@@ -212,7 +225,7 @@
                 <svg width="300" height="70" viewBox="0 0 300 70" class="inline-block">
                     <text x="0" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="white">Typer</text>
                     <text x="175" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="#22d3ee">ID</text>
-                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v14.1</text>
+                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v14.2</text>
                 </svg>
             </h1>
             <p class="text-slate-400 mt-1">The Ultimate Typing & CPS Training Hub</p>
@@ -1072,6 +1085,8 @@
                     countdown--;
                     if (countdown <= 0) {
                         countdown = 180; // Reset countdown
+                        const messagesList = document.getElementById('chat-messages-list');
+                        messagesList.innerHTML = ''; // Clear chat on refresh
                         listenToGlobalChat(); // Refresh chat
                     }
                     timerEl.textContent = countdown;
@@ -1140,13 +1155,20 @@
                     
                     const existingMessages = new Set([...messagesList.children].map(li => li.dataset.messageId));
 
-                    snapshot.docs.reverse().forEach(doc => {
-                        const messageId = doc.id;
-                        if (!existingMessages.has(messageId)) {
-                            const message = doc.data();
-                            const li = renderChatMessage(message, messageId);
-                            li.classList.add('new-message');
-                            messagesList.appendChild(li);
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === "added") {
+                            const messageId = change.doc.id;
+                             if (!existingMessages.has(messageId)) {
+                                const message = change.doc.data();
+                                const li = renderChatMessage(message, messageId);
+                                li.classList.add('new-message');
+                                // Find correct position to insert
+                                const newerMessage = [...messagesList.children].find(child => {
+                                    const childTimestamp = snapshot.docs.find(d => d.id === child.dataset.messageId)?.data().timestamp;
+                                    return childTimestamp && message.timestamp && childTimestamp.toMillis() > message.timestamp.toMillis();
+                                });
+                                messagesList.insertBefore(li, newerMessage || null);
+                            }
                         }
                     });
                     
@@ -1329,6 +1351,9 @@
                 switchView('onlineTester', ['soloTester', 'practicalTester', 'onlineTester', 'globalChat']);
                 switchView('matchRoom', ['lobby', 'matchRoom']);
                 renderMatchRoomSkeleton();
+                if (isDeveloper) {
+                    createDevCheatButton();
+                }
                 listenToMatch(matchId);
             }
 
@@ -1409,27 +1434,37 @@
                 onlineTabBtn.click();
             }
 
-            async function showCountdown() {
+            function showCountdown() {
                 showOverlay('countdown-overlay', true);
                 let count = 3;
-                countdownText.textContent = count;
-                const interval = setInterval(async () => {
-                    count--;
+                
+                const updateCountdown = () => {
+                    countdownText.classList.remove('countdown-zoom');
+                    void countdownText.offsetWidth; // Trigger reflow
+                    countdownText.classList.add('countdown-zoom');
+
                     if (count > 0) {
                         countdownText.textContent = count;
+                        setTimeout(() => {
+                            count--;
+                            updateCountdown();
+                        }, 1000);
                     } else if (count === 0) {
                         countdownText.style.fontSize = '8rem';
                         countdownText.textContent = 'GO!';
-                    } else {
-                        clearInterval(interval);
-                        showOverlay('countdown-overlay', false);
-                        countdownText.style.fontSize = '10rem';
-                        if (onlineState.hostId === myPlayerId) {
-                            const { db, doc, updateDoc } = window.firebase;
-                            await updateDoc(doc(db, "matches", currentMatchId), { status: "playing" });
-                        }
+                         setTimeout(async () => {
+                            showOverlay('countdown-overlay', false);
+                            countdownText.style.fontSize = '10rem';
+                            if (onlineState.hostId === myPlayerId) {
+                                const { db, doc, updateDoc } = window.firebase;
+                                try {
+                                    await updateDoc(doc(db, "matches", currentMatchId), { status: "playing" });
+                                } catch(e) { console.error("Could not start match", e)}
+                            }
+                        }, 1000);
                     }
-                }, 1000);
+                };
+                updateCountdown();
             }
             
             function renderMatchRoomSkeleton() {
@@ -1615,8 +1650,8 @@
                 if (!textContainer || !inputField) return;
 
                 let cheatActive = false;
-                if (isDeveloper) {
-                    const cheatBtn = createDevCheatButton();
+                const cheatBtn = document.getElementById('dev-cheat-btn');
+                if (isDeveloper && cheatBtn) {
                     cheatBtn.onclick = () => {
                         cheatActive = true;
                         cheatBtn.textContent = 'Cheat Aktif';
@@ -1736,8 +1771,8 @@
                 if (!clickArea || !timerDisplay) return;
 
                 let cheatActive = false;
-                if (isDeveloper) {
-                    const cheatBtn = createDevCheatButton();
+                const cheatBtn = document.getElementById('dev-cheat-btn');
+                if (isDeveloper && cheatBtn) {
                     cheatBtn.onclick = () => {
                         cheatActive = true;
                         cheatBtn.textContent = 'Cheat Aktif';
