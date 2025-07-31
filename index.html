@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TyperID v12.1 - The Ultimate Training Hub</title>
+    <title>TyperID v14 - The Ultimate Training Hub</title>
     
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌨️</text></svg>">
@@ -45,6 +45,9 @@
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
         .shake-error { animation: shake 0.2s ease-in-out; }
         
+        /* Progress Bar Animation */
+        .progress-bar-inner { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
         /* Effects */
         .ripple { position: absolute; border-radius: 50%; background-color: rgba(163, 230, 53, 0.5); transform: scale(0); animation: ripple 0.6s linear; }
         @keyframes ripple { to { transform: scale(4); opacity: 0; } }
@@ -132,7 +135,7 @@
                 <svg width="300" height="70" viewBox="0 0 300 70" class="inline-block">
                     <text x="0" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="white">Typer</text>
                     <text x="175" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="#22d3ee">ID</text>
-                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v12.1</text>
+                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v14</text>
                 </svg>
             </h1>
             <p class="text-slate-400 mt-1">The Ultimate Typing & CPS Training Hub</p>
@@ -886,6 +889,15 @@
                     const username = e.target.dataset.username;
                     openSendMessageModal(userId, username);
                 }
+                // NEW: Handle kick button clicks
+                if (e.target.closest('.kick-btn')) {
+                    const button = e.target.closest('.kick-btn');
+                    const userId = button.dataset.kickId;
+                    const username = button.dataset.kickName;
+                    if (confirm(`Apakah Anda yakin ingin mengeluarkan ${username} dari room?`)) {
+                        kickPlayer(userId);
+                    }
+                }
             });
 
             async function banUser(userId, username) {
@@ -966,7 +978,7 @@
                 timerEl.textContent = countdown;
                 chatRefreshCountdownInterval = setInterval(() => {
                     countdown--;
-                    if (countdown < 0) countdown = 180;
+                    if (countdown < 0) countdown = 179; // Reset to 179 to account for the 1s delay
                     timerEl.textContent = countdown;
                 }, 1000);
             }
@@ -1011,15 +1023,16 @@
                 await addDoc(collection(db, "globalChat"), messageData);
                 messageInput.value = '';
                 cancelReply();
+                listenToGlobalChat(); // Manually refresh after sending
             }
 
             function listenToGlobalChat() {
-                const { db, collection, query, orderBy, limit, onSnapshot } = window.firebase;
+                const { db, collection, query, orderBy, limit, onSnapshot, getDocs } = window.firebase;
                 const messagesList = document.getElementById('chat-messages-list');
                 const q = query(collection(db, "globalChat"), orderBy("timestamp", "desc"), limit(50));
 
-                if (unsubscribeFromGlobalChat) unsubscribeFromGlobalChat();
-                unsubscribeFromGlobalChat = onSnapshot(q, (snapshot) => {
+                // Use getDocs for manual refresh to avoid multiple listeners
+                getDocs(q).then(snapshot => {
                     const currentScroll = messagesList.parentElement.scrollHeight - messagesList.parentElement.scrollTop;
                     messagesList.innerHTML = '';
                     snapshot.docs.reverse().forEach(doc => {
@@ -1028,7 +1041,7 @@
                         messagesList.appendChild(renderChatMessage(message, messageId));
                     });
                     // Scroll to bottom only if user was already at the bottom
-                    if (currentScroll < messagesList.parentElement.clientHeight + 100) {
+                    if (currentScroll < messagesList.parentElement.clientHeight + 150) {
                          messagesList.parentElement.scrollTop = messagesList.parentElement.scrollHeight;
                     }
                 });
@@ -1112,6 +1125,7 @@
                 } catch (error) {
                     console.error("Gagal bergabung:", error);
                     showToast(`Gagal bergabung: ${error}`, "error");
+                    window.location.hash = ''; // Clear hash if join fails
                 } finally {
                     showOverlay('app-loader', false);
                 }
@@ -1119,13 +1133,11 @@
             
             async function joinRandomMatch() {
                 showOverlay('app-loader', true, 'Mencari pertandingan...');
-                const { db, collection, query, where, getDocs, limit, serverTimestamp } = window.firebase;
+                const { db, collection, query, where, getDocs, limit } = window.firebase;
                 try {
-                    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
                     const q = query(
                         collection(db, "matches"), 
                         where("status", "==", "waiting"),
-                        where("createdAt", ">", tenMinutesAgo),
                         limit(10)
                     );
                     const querySnapshot = await getDocs(q);
@@ -1160,12 +1172,21 @@
                 if (unsubscribeFromMatch) unsubscribeFromMatch();
                 unsubscribeFromMatch = onSnapshot(matchDocRef, (doc) => {
                     if (!doc.exists()) {
-                        if(views.resultsModal.style.display === 'flex') return;
+                        if(views.resultsModal.style.display === 'flex') return; // Don't show toast if results are showing
                         showToast("Pertandingan telah dibubarkan.", "error");
                         leaveMatch(true);
                         return;
                     }
                     const matchData = doc.data();
+                    
+                    // NEW: Check if kicked
+                    if (onlineState.players && !matchData.players[myPlayerId] && !localGameStarted) {
+                        const hostName = onlineState.players[onlineState.hostId]?.name || 'Host';
+                        showToast(`Anda telah dikeluarkan dari room oleh ${hostName}`, 'error');
+                        leaveMatch(true);
+                        return;
+                    }
+
                     onlineState = matchData;
                     if (views.resultsModal.style.display === 'flex') return;
                     updateMatchRoomUI(matchData);
@@ -1255,7 +1276,17 @@
                 document.getElementById('match-room-title').textContent = `Ruang ${data.matchType.toUpperCase()}`;
                 document.getElementById('match-id-display').value = currentMatchId;
                 const progressContainer = document.getElementById('player-progress-container');
-                progressContainer.innerHTML = Object.keys(data.players).map(pid => renderPlayerProgress(pid, data.players[pid], data.hostId, data.matchType)).join('');
+                
+                // Sort player list to prevent reordering
+                const playerIds = Object.keys(data.players);
+                playerIds.sort((a, b) => {
+                    if (a === myPlayerId) return -1; // Always show self on top
+                    if (b === myPlayerId) return 1;
+                    return data.players[a].name.localeCompare(data.players[b].name); // Sort others alphabetically
+                });
+
+                progressContainer.innerHTML = playerIds.map(pid => renderPlayerProgress(pid, data.players[pid], data.hostId, data.matchType, data.status)).join('');
+
                 if (!localGameStarted) {
                     const gameAreaContainer = document.getElementById('game-area-container');
                     let gameAreaHTML = '';
@@ -1312,12 +1343,47 @@
                 }
             }
             
-            function renderPlayerProgress(pid, player, hostId, matchType) {
+            function renderPlayerProgress(pid, player, hostId, matchType, status) {
                 const isMe = pid === myPlayerId;
                 const isHost = pid === hostId;
+                const isRoomHost = myPlayerId === hostId; // Check if the current client is the host
                 const devTagHTML = player.isDeveloper ? `<span class="dev-tag role-tag ml-2">Developer</span>` : '';
                 const adminTagHTML = player.isAdmin ? `<span class="admin-tag role-tag ml-2">Admin</span>` : '';
-                return `<div class="p-3 rounded-lg ${isMe ? 'bg-cyan-900/50 border border-cyan-500' : 'bg-gray-700/50'}"><div class="flex justify-between items-center mb-1"><span class="font-bold flex items-center ${isMe ? 'text-lime-400' : 'text-white'}">${player.name} ${isMe ? '(Anda)' : ''} ${isHost ? '<i class="fa-solid fa-crown text-yellow-400 ml-2" title="Host"></i>' : ''} ${devTagHTML} ${adminTagHTML} ${player.finished ? '<i class="fa-solid fa-check-circle text-green-400 ml-2"></i>' : ''}</span><span class="font-bold text-white">${player.score} ${matchType === 'wpm' ? 'WPM' : 'CPS'}</span></div><div class="w-full bg-gray-600 rounded-full h-4"><div class="bg-gradient-to-r from-cyan-500 to-lime-400 h-4 rounded-full text-xs text-right text-black font-bold pr-2 flex items-center justify-end transition-all duration-300" style="width: ${player.progress}%">${Math.round(player.progress)}%</div></div></div>`;
+                const kickBtnHTML = (isRoomHost && !isMe && status === 'waiting') ? `<button data-kick-id="${pid}" data-kick-name="${player.name}" class="kick-btn ml-auto text-red-500 hover:text-red-400 text-xs px-2 py-1 rounded-md"><i class="fa-solid fa-user-slash"></i> Kick</button>` : '';
+
+                return `<div class="p-3 rounded-lg ${isMe ? 'bg-cyan-900/50 border border-cyan-500' : 'bg-gray-700/50'}">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold flex items-center ${isMe ? 'text-lime-400' : 'text-white'}">${player.name} ${isMe ? '(Anda)' : ''} ${isHost ? '<i class="fa-solid fa-crown text-yellow-400 ml-2" title="Host"></i>' : ''} ${devTagHTML} ${adminTagHTML} ${player.finished ? '<i class="fa-solid fa-check-circle text-green-400 ml-2"></i>' : ''}</span>
+                        <div class="flex items-center gap-4">
+                            <span class="font-bold text-white">${player.score} ${matchType === 'wpm' ? 'WPM' : 'CPS'}</span>
+                            ${kickBtnHTML}
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-600 rounded-full h-4 relative overflow-hidden">
+                        <div class="progress-bar-inner bg-gradient-to-r from-cyan-500 to-lime-400 h-4 rounded-full" style="width: ${player.progress}%"></div>
+                        <span class="absolute inset-0 flex items-center justify-center text-xs text-black font-bold" style="text-shadow: 0 0 2px white;">${Math.round(player.progress)}%</span>
+                    </div>
+                </div>`;
+            }
+
+            async function kickPlayer(playerIdToKick) {
+                if (!currentMatchId) return;
+                const { db, doc, runTransaction } = window.firebase;
+                const matchDocRef = doc(db, "matches", currentMatchId);
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const matchDoc = await transaction.get(matchDocRef);
+                        if (!matchDoc.exists()) return;
+                        const data = matchDoc.data();
+                        const newPlayers = { ...data.players };
+                        delete newPlayers[playerIdToKick];
+                        transaction.update(matchDocRef, { players: newPlayers });
+                    });
+                    showToast('Pemain telah dikeluarkan.', 'info');
+                } catch (error) {
+                    console.error("Gagal mengeluarkan pemain:", error);
+                    showToast("Gagal mengeluarkan pemain.", "error");
+                }
             }
 
             async function startMatch() {
@@ -1331,6 +1397,8 @@
             
             function showResults(data) {
                 if (unsubscribeFromMatch) { unsubscribeFromMatch(); unsubscribeFromMatch = null; }
+                const { db, doc, deleteDoc } = window.firebase;
+                
                 const tableContainer = document.getElementById('results-table-container');
                 const playersArray = Object.values(data.players);
                 playersArray.sort((a, b) => b.score - a.score);
@@ -1344,11 +1412,18 @@
                 tableHTML += `</tbody></table>`;
                 tableContainer.innerHTML = tableHTML;
                 showOverlay('results-modal', true);
+
+                // Host deletes the match after 15 seconds
+                if (data.hostId === myPlayerId) {
+                    setTimeout(() => {
+                        deleteDoc(doc(db, "matches", currentMatchId)).catch(err => console.log("Gagal menghapus match, mungkin sudah dihapus."));
+                    }, 15000);
+                }
             }
 
             backToLobbyBtn.addEventListener('click', () => { 
                 showOverlay('results-modal', false);
-                leaveMatch(false);
+                leaveMatch(true); // Treat it as if match is deleted
             });
 
             // ONLINE WPM GAME LOGIC
