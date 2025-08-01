@@ -298,10 +298,7 @@
                 <div id="global-chat-view" class="view flex-col gap-4 bg-gray-800/80 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
                     <div class="flex justify-between items-center">
                         <h2 class="text-2xl font-bold text-cyan-400 text-center">Global Chat</h2>
-                        <div class="text-xs text-slate-400">
-                            <span>Refresh dalam: </span>
-                            <span id="chat-refresh-timer">180</span>s
-                        </div>
+                        <div id="chat-status-indicator" class="text-xs text-slate-400"></div>
                     </div>
                     <div id="chat-messages-container" class="flex-grow overflow-y-auto scrollbar-hide flex flex-col-reverse">
                         <ul id="chat-messages-list" class="flex flex-col gap-4 p-2">
@@ -434,7 +431,6 @@
             let localGameStarted = false;
             let presenceInterval = null;
             let activeReply = null;
-            let chatRefreshCountdownInterval = null;
             let selectedCpsDuration = 5;
             let typingTimeout = null;
             let cheatActive = false;
@@ -1225,28 +1221,11 @@
             }
 
             function startGlobalChatSystem() {
-                if (chatRefreshCountdownInterval) clearInterval(chatRefreshCountdownInterval);
                 if (unsubscribeFromGlobalChat) unsubscribeFromGlobalChat();
                 if (unsubscribeFromTyping) unsubscribeFromTyping();
 
-                listenToGlobalChat(); // Initial fetch
+                listenToGlobalChat();
                 listenForTyping();
-                
-                let countdown = 180;
-                const timerEl = document.getElementById('chat-refresh-timer');
-                timerEl.textContent = countdown;
-
-                chatRefreshCountdownInterval = setInterval(() => {
-                    countdown--;
-                    if (countdown < 0) {
-                        countdown = 180;
-                        const messagesList = document.getElementById('chat-messages-list');
-                        messagesList.innerHTML = '';
-                        if(unsubscribeFromGlobalChat) unsubscribeFromGlobalChat();
-                        listenToGlobalChat();
-                    }
-                    timerEl.textContent = countdown;
-                }, 1000);
             }
             
             function activateReply(messageId, senderName) {
@@ -1306,20 +1285,29 @@
             function listenToGlobalChat() {
                 const { db, collection, query, orderBy, limit, onSnapshot } = window.firebase;
                 const messagesList = document.getElementById('chat-messages-list');
+                const chatStatus = document.getElementById('chat-status-indicator');
                 const q = query(collection(db, "globalChat"), orderBy("timestamp", "desc"), limit(50));
                 
                 if (unsubscribeFromGlobalChat) unsubscribeFromGlobalChat();
 
                 unsubscribeFromGlobalChat = onSnapshot(q, (snapshot) => {
+                    chatStatus.innerHTML = `<span class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div> Live</span>`;
                     snapshot.docChanges().forEach(change => {
                         const messageId = change.doc.id;
                         const messageData = change.doc.data();
-                        const existingLi = messagesList.querySelector(`[data-message-id="${messageId}"]`);
+                        const existingLi = messagesList.querySelector(`li[data-message-id="${messageId}"]`);
 
                         if (change.type === "added" && !existingLi) {
                             const li = renderChatMessage(messageData, messageId);
                             li.classList.add('new-message');
-                            messagesList.insertBefore(li, messagesList.firstChild);
+                            // Insert in correct chronological order
+                            const existingMessages = Array.from(messagesList.querySelectorAll('li'));
+                            const newerMessage = existingMessages.find(msg => {
+                                const msgTimestamp = msg.dataset.timestamp ? parseInt(msg.dataset.timestamp, 10) : 0;
+                                const newTimestamp = messageData.timestamp ? messageData.timestamp.toMillis() : 0;
+                                return msgTimestamp > newTimestamp;
+                            });
+                            messagesList.insertBefore(li, newerMessage || null);
                         } else if (change.type === "modified") {
                             if (existingLi) {
                                 const newLi = renderChatMessage(messageData, messageId);
@@ -1329,6 +1317,9 @@
                             if (existingLi) existingLi.remove();
                         }
                     });
+                }, (error) => {
+                    console.error("Chat listener error:", error);
+                    chatStatus.innerHTML = `<span class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-red-500"></div> Error</span>`;
                 });
             }
 
@@ -1339,6 +1330,10 @@
                 li.dataset.messageId = messageId;
                 li.dataset.senderId = message.senderId;
                 li.dataset.senderName = message.senderName;
+                if (message.timestamp) {
+                    li.dataset.timestamp = message.timestamp.toMillis();
+                }
+
 
                 let bubbleClass = 'user-bubble';
                 if (message.senderIsDeveloper) bubbleClass = isMe ? 'my-dev-bubble dev-bubble-base' : 'dev-bubble dev-bubble-base';
