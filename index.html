@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TyperID v14.2 - The Ultimate Training Hub</title>
+    <title>TyperID v14.5 - The Ultimate Training Hub</title>
     
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌨️</text></svg>">
@@ -53,37 +53,47 @@
         @keyframes ripple { to { transform: scale(4); opacity: 0; } }
 
         /* Role Tags Style */
-        .role-tag { font-weight: bold; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; position: relative; overflow: hidden; }
-        @keyframes gradient-animation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .role-tag {
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            position: relative;
+            overflow: hidden;
+            /* FIX: Create a new stacking context to ensure overflow:hidden clips the transformed pseudo-element */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
         
         .admin-tag { background: linear-gradient(90deg, #facc15, #fb923c, #facc15); background-size: 200% 200%; color: #111827; animation: gradient-animation 4s ease infinite; }
         .user-tag { background-color: #4b5563; color: #d1d5db; }
 
-        /* NEW: Enhanced Developer Tag (Red Theme) */
+        /* --- REFINED: Developer Tag Shimmer --- */
         @keyframes dev-glow-red {
             0%, 100% { box-shadow: 0 0 6px #ef4444, 0 0 12px #ef4444; }
             50% { box-shadow: 0 0 12px #f87171, 0 0 20px #f87171; }
         }
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) skewX(-20deg); }
-            100% { transform: translateX(200%) skewX(-20deg); }
+        @keyframes refined-shimmer {
+            0% { transform: translateX(-200%) rotate(25deg); }
+            100% { transform: translateX(600%) rotate(25deg); }
         }
         .dev-tag {
-            background: linear-gradient(90deg, #ef4444, #f87171, #dc2626, #ef4444);
-            background-size: 300% 300%;
+            background-color: #dc2626;
             color: white;
-            animation: gradient-animation 3s ease infinite, dev-glow-red 3s ease-in-out infinite;
             text-shadow: 0 0 3px rgba(0,0,0,0.6);
+            animation: dev-glow-red 3s ease-in-out infinite;
         }
-        .dev-tag::before {
+        .dev-tag::after {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 50%;
-            height: 100%;
-            background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.4), rgba(255,255,255,0));
-            animation: shimmer 2.5s infinite;
+            top: -50%;
+            left: -50%;
+            width: 20%;
+            height: 200%;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: rotate(25deg);
+            animation: refined-shimmer 3s infinite linear;
+            animation-delay: 1s; /* Add a small delay to the loop */
         }
         
         /* Overlays & Modals */
@@ -119,7 +129,7 @@
         .chat-bubble.admin-bubble { background: linear-gradient(135deg, #facc15, #fb923c); color: #1f2937; border-radius: 1.25rem; border-bottom-left-radius: 0.25rem; }
         .chat-bubble.my-admin-bubble { background: linear-gradient(135deg, #facc15, #fb923c); color: #1f2937; border-radius: 1.25rem; border-bottom-right-radius: 0.25rem; }
         
-        /* NEW: Enhanced Developer Chat Bubble (Cloud Shape) */
+        /* Enhanced Developer Chat Bubble (Cloud Shape) */
         .dev-bubble-base {
             background: linear-gradient(135deg, #4c0519, #111827);
             color: #fecaca;
@@ -135,7 +145,7 @@
 
         .reply-content { background-color: rgba(0,0,0,0.2); padding: 0.25rem 0.5rem; margin-bottom: 0.25rem; border-left: 3px solid #06b6d4; border-radius: 4px; font-size: 0.8rem; opacity: 0.8; }
         
-        /* NEW: Chat Animations */
+        /* Chat Animations & Interactions */
         @keyframes new-message-anim {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -151,6 +161,18 @@
             font-size: 0.9rem;
             transition: opacity 0.3s;
         }
+        .message-options { position: absolute; top: -10px; background-color: #111827; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); display: flex; gap: 4px; padding: 4px; opacity: 0; visibility: hidden; transition: all 0.2s; z-index: 10; }
+        .my-message .message-options { right: 0; }
+        .other-message .message-options { left: 0; }
+        .chat-message-container:hover .message-options { opacity: 1; visibility: visible; top: -30px; }
+        .option-btn { background: none; border: none; color: #d1d5db; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+        .option-btn:hover { background-color: #374151; }
+        .reactions-container { display: flex; gap: 4px; margin-top: 6px; }
+        .reaction-pill { background-color: #374151; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; cursor: pointer; border: 1px solid transparent; }
+        .reaction-pill.reacted { background-color: #0e7490; border-color: #06b6d4; }
+        .reaction-picker { position: absolute; top: -40px; background-color: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 4px; display: flex; gap: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index: 20; }
+        .my-message .reaction-picker { right: 20px; }
+        .other-message .reaction-picker { left: 20px; }
 
         /* Developer Cheat Button */
         #dev-cheat-btn {
@@ -171,6 +193,11 @@
         #dev-cheat-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 0 25px rgba(239, 68, 68, 0.8);
+        }
+        #dev-cheat-btn.active {
+            background: linear-gradient(90deg, #16a34a, #22c55e);
+            border-color: #15803d;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
         }
         #dev-cheat-btn:disabled {
             background: #4b5563;
@@ -225,7 +252,7 @@
                 <svg width="300" height="70" viewBox="0 0 300 70" class="inline-block">
                     <text x="0" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="white">Typer</text>
                     <text x="175" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="60" fill="#22d3ee">ID</text>
-                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v14.2</text>
+                    <text x="245" y="35" font-family="Inter, sans-serif" font-weight="700" font-size="20" fill="#a3e635">v14.5</text>
                 </svg>
             </h1>
             <p class="text-slate-400 mt-1">The Ultimate Typing & CPS Training Hub</p>
@@ -283,7 +310,7 @@
                     </div>
                     <div id="typing-indicator"></div>
                     <div id="chat-replying-to-container" class="hidden p-2 bg-gray-700/50 rounded-md text-sm"></div>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 relative">
                         <textarea id="chat-message-input" placeholder="Ketik pesan..." rows="1" class="flex-grow bg-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 resize-none"></textarea>
                         <button id="send-chat-message-btn" class="px-5 py-2 bg-cyan-500 text-white font-bold rounded-lg hover:bg-cyan-600 transition-colors"><i class="fa-solid fa-paper-plane"></i></button>
                     </div>
@@ -409,8 +436,8 @@
             let activeReply = null;
             let chatRefreshCountdownInterval = null;
             let selectedCpsDuration = 5;
-            let devCheatInterval = null;
             let typingTimeout = null;
+            let cheatActive = false;
 
             const textSamples = {
                 id: [
@@ -992,7 +1019,6 @@
                     const username = e.target.dataset.username;
                     openSendMessageModal(userId, username);
                 }
-                // NEW: Handle kick button clicks
                 if (e.target.closest('.kick-btn')) {
                     const button = e.target.closest('.kick-btn');
                     const userId = button.dataset.kickId;
@@ -1045,7 +1071,112 @@
                 showOverlay('send-message-modal', false);
             });
 
-            // --- Global Chat Logic ---
+            // --- Global Chat Helper Functions ---
+            async function deleteChatMessage(messageId) {
+                const { db, doc, updateDoc } = window.firebase;
+                const messageRef = doc(db, "globalChat", messageId);
+                await updateDoc(messageRef, {
+                    text: '',
+                    deleted: true
+                });
+            }
+
+            async function reactToMessage(messageId, emoji) {
+                const { db, doc, getDoc, updateDoc } = window.firebase;
+                const messageRef = doc(db, "globalChat", messageId);
+                const docSnap = await getDoc(messageRef);
+                if (!docSnap.exists()) return;
+
+                const messageData = docSnap.data();
+                const reactions = messageData.reactions || {};
+                
+                if (!reactions[emoji]) {
+                    reactions[emoji] = [];
+                }
+
+                const userIndex = reactions[emoji].indexOf(myPlayerId);
+                if (userIndex > -1) {
+                    reactions[emoji].splice(userIndex, 1);
+                } else {
+                    reactions[emoji].push(myPlayerId);
+                }
+
+                if (reactions[emoji].length === 0) {
+                    delete reactions[emoji];
+                }
+
+                await updateDoc(messageRef, { reactions });
+            }
+
+            function enterEditMode(messageContainer, messageId, currentText) {
+                const bubble = messageContainer.querySelector('.chat-bubble');
+                const originalContent = bubble.innerHTML;
+                
+                bubble.innerHTML = `
+                    <textarea class="edit-textarea w-full bg-gray-900 text-white p-2 rounded-md resize-none">${currentText}</textarea>
+                    <div class="flex justify-end gap-2 mt-2">
+                        <button class="cancel-edit-btn text-xs bg-gray-600 px-2 py-1 rounded">Batal</button>
+                        <button class="save-edit-btn text-xs bg-cyan-500 px-2 py-1 rounded">Simpan</button>
+                    </div>
+                `;
+
+                const textarea = bubble.querySelector('.edit-textarea');
+                textarea.focus();
+                textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+
+                bubble.querySelector('.cancel-edit-btn').onclick = () => {
+                    bubble.innerHTML = originalContent;
+                };
+
+                bubble.querySelector('.save-edit-btn').onclick = async () => {
+                    const newText = textarea.value.trim();
+                    if (newText && newText !== currentText) {
+                        const { db, doc, updateDoc, serverTimestamp } = window.firebase;
+                        const messageRef = doc(db, "globalChat", messageId);
+                        await updateDoc(messageRef, {
+                            text: newText,
+                            isEdited: true,
+                            timestamp: serverTimestamp()
+                        });
+                    } else {
+                         bubble.innerHTML = originalContent;
+                    }
+                };
+            }
+            
+            function toggleReactionPicker(messageContainer) {
+                // Close any other open pickers
+                document.querySelectorAll('.reaction-picker').forEach(picker => {
+                    if (picker.parentElement !== messageContainer) {
+                        picker.remove();
+                    }
+                });
+
+                let picker = messageContainer.querySelector('.reaction-picker');
+                if (picker) {
+                    picker.remove();
+                    return;
+                }
+
+                picker = document.createElement('div');
+                picker.className = 'reaction-picker';
+                
+                const emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+                emojis.forEach(emoji => {
+                    const btn = document.createElement('button');
+                    btn.className = 'p-1 rounded-md hover:bg-gray-600 text-xl';
+                    btn.textContent = emoji;
+                    btn.onclick = () => {
+                        reactToMessage(messageContainer.dataset.messageId, emoji);
+                        picker.remove();
+                    };
+                    picker.appendChild(btn);
+                });
+
+                messageContainer.appendChild(picker);
+            }
+
+            // --- Global Chat Main Functions ---
             function initializeGlobalChat() {
                 const messageInput = document.getElementById('chat-message-input');
                 const sendBtn = document.getElementById('send-chat-message-btn');
@@ -1060,11 +1191,35 @@
                 });
 
                 document.getElementById('chat-messages-list').addEventListener('click', (e) => {
-                    const replyBtn = e.target.closest('.reply-btn');
-                    if (replyBtn) {
-                        const messageId = replyBtn.dataset.messageid;
-                        const senderName = replyBtn.dataset.sendername;
-                        activateReply(messageId, senderName);
+                    const messageContainer = e.target.closest('.chat-message-container');
+                    if (!messageContainer) return;
+
+                    const messageId = messageContainer.dataset.messageId;
+                    const senderId = messageContainer.dataset.senderId;
+                    const senderName = messageContainer.dataset.senderName;
+                    const currentText = messageContainer.querySelector('.message-text')?.textContent;
+
+                    // Handle options menu clicks
+                    if (e.target.closest('.option-btn')) {
+                        const button = e.target.closest('.option-btn');
+                        if (button.classList.contains('reply-option-btn')) {
+                            activateReply(messageId, senderName);
+                        } else if (button.classList.contains('edit-option-btn')) {
+                            enterEditMode(messageContainer, messageId, currentText);
+                        } else if (button.classList.contains('delete-option-btn')) {
+                            if (confirm('Apakah Anda yakin ingin menghapus pesan ini?')) {
+                                deleteChatMessage(messageId);
+                            }
+                        } else if (button.classList.contains('react-option-btn')) {
+                            toggleReactionPicker(messageContainer);
+                        }
+                    }
+
+                    // Handle reaction clicks
+                    if (e.target.closest('.reaction-pill')) {
+                        const pill = e.target.closest('.reaction-pill');
+                        const emoji = pill.dataset.emoji;
+                        reactToMessage(messageId, emoji);
                     }
                 });
             }
@@ -1083,16 +1238,17 @@
 
                 chatRefreshCountdownInterval = setInterval(() => {
                     countdown--;
-                    if (countdown <= 0) {
-                        countdown = 180; // Reset countdown
+                    if (countdown < 0) {
+                        countdown = 180;
                         const messagesList = document.getElementById('chat-messages-list');
-                        messagesList.innerHTML = ''; // Clear chat on refresh
-                        listenToGlobalChat(); // Refresh chat
+                        messagesList.innerHTML = '';
+                        if(unsubscribeFromGlobalChat) unsubscribeFromGlobalChat();
+                        listenToGlobalChat();
                     }
                     timerEl.textContent = countdown;
                 }, 1000);
             }
-
+            
             function activateReply(messageId, senderName) {
                 activeReply = { id: messageId, name: senderName };
                 const container = document.getElementById('chat-replying-to-container');
@@ -1124,6 +1280,9 @@
                     senderIsAdmin: isAdmin,
                     senderIsDeveloper: isDeveloper,
                     timestamp: serverTimestamp(),
+                    reactions: {},
+                    isEdited: false,
+                    deleted: false,
                 };
 
                 if (activeReply) {
@@ -1134,9 +1293,10 @@
                     await addDoc(collection(db, "globalChat"), messageData);
                     messageInput.value = '';
                     cancelReply();
-                    // Stop broadcasting typing status
                     if (typingTimeout) clearTimeout(typingTimeout);
-                    deleteDoc(doc(db, "typingStatus", myPlayerId));
+                    if (myPlayerId) {
+                        deleteDoc(doc(db, "typingStatus", myPlayerId));
+                    }
                 } catch (error) {
                     console.error("Error sending chat message:", error);
                     showToast("Gagal mengirim pesan.", "error");
@@ -1151,43 +1311,34 @@
                 if (unsubscribeFromGlobalChat) unsubscribeFromGlobalChat();
 
                 unsubscribeFromGlobalChat = onSnapshot(q, (snapshot) => {
-                    const shouldScroll = messagesList.parentElement.scrollTop + messagesList.parentElement.clientHeight >= messagesList.parentElement.scrollHeight - 50;
-                    
-                    const existingMessages = new Set([...messagesList.children].map(li => li.dataset.messageId));
-
                     snapshot.docChanges().forEach(change => {
-                        if (change.type === "added") {
-                            const messageId = change.doc.id;
-                             if (!existingMessages.has(messageId)) {
-                                const message = change.doc.data();
-                                const li = renderChatMessage(message, messageId);
-                                li.classList.add('new-message');
-                                // Find correct position to insert
-                                const newerMessage = [...messagesList.children].find(child => {
-                                    const childTimestamp = snapshot.docs.find(d => d.id === child.dataset.messageId)?.data().timestamp;
-                                    return childTimestamp && message.timestamp && childTimestamp.toMillis() > message.timestamp.toMillis();
-                                });
-                                messagesList.insertBefore(li, newerMessage || null);
+                        const messageId = change.doc.id;
+                        const messageData = change.doc.data();
+                        const existingLi = messagesList.querySelector(`[data-message-id="${messageId}"]`);
+
+                        if (change.type === "added" && !existingLi) {
+                            const li = renderChatMessage(messageData, messageId);
+                            li.classList.add('new-message');
+                            messagesList.insertBefore(li, messagesList.firstChild);
+                        } else if (change.type === "modified") {
+                            if (existingLi) {
+                                const newLi = renderChatMessage(messageData, messageId);
+                                existingLi.replaceWith(newLi);
                             }
+                        } else if (change.type === "removed") {
+                            if (existingLi) existingLi.remove();
                         }
                     });
-                    
-                    // Cleanup old messages if list exceeds limit
-                    while(messagesList.children.length > 50) {
-                        messagesList.removeChild(messagesList.firstChild);
-                    }
-                    
-                    if (shouldScroll) {
-                         messagesList.parentElement.scrollTop = messagesList.parentElement.scrollHeight;
-                    }
                 });
             }
 
             function renderChatMessage(message, messageId) {
                 const isMe = message.senderId === myPlayerId;
                 const li = document.createElement('li');
-                li.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+                li.className = `chat-message-container relative flex flex-col ${isMe ? 'items-end my-message' : 'items-start other-message'}`;
                 li.dataset.messageId = messageId;
+                li.dataset.senderId = message.senderId;
+                li.dataset.senderName = message.senderName;
 
                 let bubbleClass = 'user-bubble';
                 if (message.senderIsDeveloper) bubbleClass = isMe ? 'my-dev-bubble dev-bubble-base' : 'dev-bubble dev-bubble-base';
@@ -1205,20 +1356,47 @@
                     </div>`;
                 }
 
+                const optionsHTML = `
+                    <div class="message-options">
+                        <button class="option-btn react-option-btn" title="Reaksi"><i class="fa-regular fa-face-smile"></i></button>
+                        <button class="option-btn reply-option-btn" title="Balas"><i class="fa-solid fa-reply"></i></button>
+                        ${isMe ? `<button class="option-btn edit-option-btn" title="Edit"><i class="fa-solid fa-pencil"></i></button>` : ''}
+                        ${isMe || isDeveloper ? `<button class="option-btn delete-option-btn" title="Hapus"><i class="fa-solid fa-trash"></i></button>` : ''}
+                    </div>
+                `;
+
+                const reactionsHTML = `
+                    <div class="reactions-container">
+                        ${Object.entries(message.reactions || {}).map(([emoji, userIds]) => {
+                            if (userIds.length === 0) return '';
+                            const userHasReacted = userIds.includes(myPlayerId);
+                            return `<div class="reaction-pill ${userHasReacted ? 'reacted' : ''}" data-emoji="${emoji}">
+                                        <span>${emoji}</span>
+                                        <span class="ml-1 text-xs">${userIds.length}</span>
+                                    </div>`;
+                        }).join('')}
+                    </div>
+                `;
+
+                const editedIndicator = message.isEdited ? `<span class="text-xs text-slate-400 ml-2">(diedit)</span>` : '';
+                const messageContent = message.deleted ? `<p class="text-slate-400 italic">Pesan ini telah dihapus.</p>` : `<p class="message-text">${message.text.replace(/\n/g, '<br>')}</p>`;
+
                 li.innerHTML = `
+                    ${optionsHTML}
                     <div class="chat-bubble ${bubbleClass}">
                         <div class="flex justify-between items-center gap-4 mb-1">
                            <strong class="text-sm flex items-center">${isMe ? 'Anda' : message.senderName} ${roleTagHTML}</strong>
-                           <button class="reply-btn text-xs opacity-50 hover:opacity-100" data-messageid="${messageId}" data-sendername="${message.senderName}"><i class="fa-solid fa-reply"></i></button>
                         </div>
                         ${replyHTML}
-                        <p>${message.text.replace(/\n/g, '<br>')}</p>
+                        ${messageContent}
                     </div>
+                    ${reactionsHTML}
                 `;
                 return li;
             }
             
             async function updateTypingStatus() {
+                if (!myPlayerId || !myPlayerName) return;
                 const { db, doc, setDoc, deleteDoc, serverTimestamp } = window.firebase;
                 const typingRef = doc(db, "typingStatus", myPlayerId);
 
@@ -1233,7 +1411,7 @@
 
                     typingTimeout = setTimeout(async () => {
                         await deleteDoc(typingRef);
-                    }, 3000); // User is considered not typing after 3 seconds
+                    }, 3000);
                 } else {
                     await deleteDoc(typingRef);
                 }
@@ -1242,9 +1420,9 @@
             function listenForTyping() {
                 const { db, collection, query, where, onSnapshot } = window.firebase;
                 const typingIndicator = document.getElementById('typing-indicator');
-                const threeSecondsAgo = new Date(Date.now() - 3000);
+                const threeSecondsAgo = () => new Date(Date.now() - 3000);
 
-                const q = query(collection(db, "typingStatus"), where("timestamp", ">", threeSecondsAgo));
+                const q = query(collection(db, "typingStatus"), where("timestamp", ">", threeSecondsAgo()));
 
                 if (unsubscribeFromTyping) unsubscribeFromTyping();
 
@@ -1267,7 +1445,6 @@
                     }
                 });
             }
-
 
             // --- Match Logic ---
             async function createMatch(matchType) {
@@ -1313,7 +1490,7 @@
                 } catch (error) {
                     console.error("Gagal bergabung:", error);
                     showToast(`Gagal bergabung: ${error}`, "error");
-                    window.location.hash = ''; // Clear hash if join fails
+                    try { history.pushState("", document.title, window.location.pathname + window.location.search); } catch(e) {}
                 } finally {
                     showOverlay('app-loader', false);
                 }
@@ -1347,12 +1524,12 @@
                 currentMatchId = matchId;
                 localGameStarted = false;
                 toggleMainTabs(false);
-                window.location.hash = `match=${matchId}`;
+                try { window.location.hash = `match=${matchId}`; } catch(e) {}
                 switchView('onlineTester', ['soloTester', 'practicalTester', 'onlineTester', 'globalChat']);
                 switchView('matchRoom', ['lobby', 'matchRoom']);
                 renderMatchRoomSkeleton();
                 if (isDeveloper) {
-                    createDevCheatButton();
+                    setupDevCheatButton();
                 }
                 listenToMatch(matchId);
             }
@@ -1363,7 +1540,7 @@
                 if (unsubscribeFromMatch) unsubscribeFromMatch();
                 unsubscribeFromMatch = onSnapshot(matchDocRef, (doc) => {
                     if (!doc.exists()) {
-                        if(views.resultsModal.style.display === 'flex') return; // Don't show toast if results are showing
+                        if(views.resultsModal.style.display === 'flex') return;
                         showToast("Pertandingan telah dibubarkan.", "error");
                         leaveMatch(true);
                         return;
@@ -1387,7 +1564,7 @@
                         if (matchData.matchType === 'wpm') initializeOnlineWpmGame(matchData);
                         else initializeOnlineCpsGame(matchData);
                     }
-                    const allPlayersFinished = Object.values(matchData.players).every(p => p.finished);
+                    const allPlayersFinished = Object.keys(matchData.players).length > 0 && Object.values(matchData.players).every(p => p.finished);
                     if (allPlayersFinished && matchData.status === 'playing') {
                         showResults(matchData);
                     }
@@ -1418,17 +1595,20 @@
             }
 
             function resetOnlineState() {
-                // Cleanup dev cheat button if it exists
                 const cheatBtn = document.getElementById('dev-cheat-btn');
                 if (cheatBtn) cheatBtn.remove();
-                if (devCheatInterval) clearInterval(devCheatInterval);
+                cheatActive = false;
 
                 currentMatchId = null;
                 onlineState = {};
                 localGameStarted = false;
                 toggleMainTabs(true);
-                if (window.location.hash) {
-                    history.pushState("", document.title, window.location.pathname + window.location.search);
+                try {
+                    if (window.location.hash) {
+                        history.pushState("", document.title, window.location.pathname + window.location.search);
+                    }
+                } catch (e) {
+                    console.warn("Could not clear URL hash due to security restrictions.");
                 }
                 switchView('mainApp');
                 onlineTabBtn.click();
@@ -1553,7 +1733,7 @@
                 const isRoomHost = myPlayerId === hostId;
                 const devTagHTML = player.isDeveloper ? `<span class="dev-tag role-tag ml-2">Developer</span>` : '';
                 const adminTagHTML = player.isAdmin ? `<span class="admin-tag role-tag ml-2">Admin</span>` : '';
-                const kickBtnHTML = (isRoomHost && !isMe && status === 'waiting') ? `<button data-kick-id="${pid}" data-kick-name="${player.name}" class="kick-btn ml-auto text-red-500 hover:text-red-400 text-xs px-2 py-1 rounded-md"><i class="fa-solid fa-user-slash"></i> Kick</button>` : '';
+                const kickBtnHTML = (isRoomHost && !isMe && status === 'waiting') ? `<button data-kick-id="${pid}" data-kick-name="${player.name}" class="kick-btn ml-auto text-red-500 hover:text-red-400 text-xs px-2 py-1 rounded-md"><i class="fa-solid fa-user-slash"></i></button>` : '';
 
                 return `<div class="p-3 rounded-lg ${isMe ? 'bg-cyan-900/50 border border-cyan-500' : 'bg-gray-700/50'}">
                     <div class="flex justify-between items-center mb-1">
@@ -1603,11 +1783,6 @@
                 if (unsubscribeFromMatch) { unsubscribeFromMatch(); unsubscribeFromMatch = null; }
                 const { db, doc, deleteDoc } = window.firebase;
                 
-                // Cleanup dev cheat button
-                const cheatBtn = document.getElementById('dev-cheat-btn');
-                if (cheatBtn) cheatBtn.remove();
-                if (devCheatInterval) clearInterval(devCheatInterval);
-
                 const tableContainer = document.getElementById('results-table-container');
                 const playersArray = Object.values(data.players);
                 playersArray.sort((a, b) => b.score - a.score);
@@ -1633,14 +1808,17 @@
                 showOverlay('results-modal', false);
                 leaveMatch(true); 
             });
-
-            function createDevCheatButton() {
-                if (!isDeveloper || document.getElementById('dev-cheat-btn')) return;
-                const btn = document.createElement('button');
-                btn.id = 'dev-cheat-btn';
-                btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Aktifkan Cheat';
-                document.body.appendChild(btn);
-                return btn;
+            
+            function setupDevCheatButton() {
+                let cheatBtn = document.getElementById('dev-cheat-btn');
+                if (!cheatBtn) {
+                    cheatBtn = document.createElement('button');
+                    cheatBtn.id = 'dev-cheat-btn';
+                    document.body.appendChild(cheatBtn);
+                }
+                cheatBtn.innerHTML = cheatActive ? '<i class="fa-solid fa-bolt"></i> Cheat Aktif' : '<i class="fa-solid fa-bolt"></i> Aktifkan Cheat';
+                cheatBtn.className = cheatActive ? 'active' : '';
+                cheatBtn.disabled = false;
             }
 
             // ONLINE WPM GAME LOGIC
@@ -1649,14 +1827,34 @@
                 const inputField = document.getElementById('online-input-field');
                 if (!textContainer || !inputField) return;
 
-                let cheatActive = false;
+                let cheatPendingActivation = false;
+                let autoTypingInterval = null;
                 const cheatBtn = document.getElementById('dev-cheat-btn');
-                if (isDeveloper && cheatBtn) {
+                if (cheatBtn) {
+                    cheatBtn.disabled = false; // Ensure button is enabled
                     cheatBtn.onclick = () => {
-                        cheatActive = true;
-                        cheatBtn.textContent = 'Cheat Aktif';
-                        cheatBtn.disabled = true;
-                        showToast('Cheat WPM diaktifkan!', 'info');
+                        if (testFinished) return;
+                        
+                        cheatActive = !cheatActive;
+                        cheatBtn.classList.toggle('active', cheatActive);
+
+                        if (cheatActive) {
+                            cheatPendingActivation = true;
+                            cheatBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Menunggu...';
+                            showToast(`Cheat disiapkan. Ketik 1 huruf benar untuk memulai.`);
+                            inputField.disabled = false;
+                            inputField.focus();
+                            clearInterval(autoTypingInterval);
+                            autoTypingInterval = null;
+                        } else {
+                            cheatPendingActivation = false;
+                            cheatBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Aktifkan Cheat';
+                            showToast(`Cheat dinonaktifkan.`);
+                            clearInterval(autoTypingInterval);
+                            autoTypingInterval = null;
+                            inputField.disabled = false;
+                            inputField.focus();
+                        }
                     };
                 }
 
@@ -1670,13 +1868,14 @@
                 async function finishTest() {
                     if (testFinished) return;
                     testFinished = true;
-                    if (devCheatInterval) clearInterval(devCheatInterval);
+                    clearInterval(autoTypingInterval);
+                    autoTypingInterval = null;
                     inputField.blur();
                     inputField.disabled = true;
                     const duration = (new Date() - startTime) / 1000;
-                    const correctChars = text.length; // Cheat assumes 100% accuracy
-                    const wpm = cheatActive ? 200 : (duration > 0 ? Math.round(((correctChars / 5) / (duration / 60))) : 0);
-                    const accuracy = 100;
+                    const correctChars = currentIndex - errorCount;
+                    const wpm = (duration > 0 ? Math.round(((correctChars / 5) / (duration / 60))) : 0);
+                    const accuracy = currentIndex > 0 ? Math.round((correctChars / currentIndex) * 100) : 100;
                     if (!currentMatchId) return;
                     const { db, doc, updateDoc } = window.firebase;
                     try {
@@ -1698,32 +1897,77 @@
                     const { db, doc, updateDoc } = window.firebase;
                     try {
                         await updateDoc(doc(db, "matches", currentMatchId), {
-                            [`players.${myPlayerId}.score`]: cheatActive ? 200 : wpm,
+                            [`players.${myPlayerId}.score`]: wpm,
                             [`players.${myPlayerId}.progress`]: progress,
                         });
                     } catch (e) { console.log("Gagal update progress, mungkin match sudah selesai.")}
                 }
+                
+                function startAutoTyping() {
+                    if (autoTypingInterval) return; // Prevent multiple intervals
+                    const wpm = 500; // Increased speed
+                    const charsPerMinute = wpm * 5;
+                    const delay = 60000 / charsPerMinute; 
 
-                function startWpmCheat() {
-                    const typingSpeed = 30; // ms per character for 200 WPM (60000ms / (200wpm * 5char/w))
-                    devCheatInterval = setInterval(() => {
-                        if (currentIndex >= text.length -1 || testFinished) {
-                            finishTest();
+                    autoTypingInterval = setInterval(() => {
+                        if (testFinished || currentIndex >= text.length) {
+                            clearInterval(autoTypingInterval);
+                            autoTypingInterval = null;
+                            if (!testFinished) finishTest();
                             return;
                         }
-                        charSpans[currentIndex].className = 'char-span char-correct';
+                        
+                        if (!startTime) startTime = new Date();
+
+                        const currentSpan = charSpans[currentIndex];
+                        currentSpan.className = 'char-span char-correct';
+                        currentSpan.classList.remove('cursor', 'border-l-2', 'border-lime-400');
                         currentIndex++;
-                        charSpans[currentIndex].classList.add('cursor', 'border-l-2', 'border-lime-400');
-                        if (currentIndex % 5 === 0) updateMyProgress();
-                    }, typingSpeed);
+
+                        if (currentIndex < text.length) {
+                            charSpans[currentIndex].classList.add('cursor', 'border-l-2', 'border-lime-400');
+                        }
+                        
+                        updateMyProgress();
+
+                        if (currentIndex >= text.length) {
+                            clearInterval(autoTypingInterval);
+                            autoTypingInterval = null;
+                            finishTest();
+                        }
+                    }, delay);
                 }
 
                 function handleInput(e) {
-                    if (testFinished || currentIndex >= text.length) return;
+                    if (testFinished || currentIndex >= text.length || autoTypingInterval) return;
                     if (!startTime) startTime = new Date();
+                    
                     const typedChar = e.target.value.slice(-1);
                     e.target.value = '';
                     const expectedChar = text[currentIndex];
+
+                    if (cheatPendingActivation) {
+                        if (typedChar === expectedChar) {
+                            cheatPendingActivation = false;
+                            inputField.disabled = true;
+                            if(cheatBtn) cheatBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Cheat Aktif';
+                            
+                            // Process this first correct character
+                            const currentSpan = charSpans[currentIndex];
+                            currentSpan.className = 'char-span char-correct';
+                            currentSpan.classList.remove('cursor', 'border-l-2', 'border-lime-400');
+                            currentIndex++;
+                            if (currentIndex < text.length) {
+                                charSpans[currentIndex].classList.add('cursor', 'border-l-2', 'border-lime-400');
+                            }
+                            updateMyProgress();
+                            
+                            // Start auto-typing for the rest
+                            startAutoTyping();
+                            return;
+                        }
+                    }
+                    
                     const currentSpan = charSpans[currentIndex];
                     if (typedChar !== expectedChar) {
                         if (!currentSpan.classList.contains('char-incorrect')) { errorCount++; currentSpan.classList.add('char-incorrect'); }
@@ -1738,13 +1982,7 @@
                         finishTest();
                         return;
                     }
-
-                    if (cheatActive && currentIndex === 1) {
-                        inputField.disabled = true;
-                        startWpmCheat();
-                    } else {
-                       updateMyProgress();
-                    }
+                    updateMyProgress();
                 }
                 
                 function handleKeydown(e) {
@@ -1770,15 +2008,9 @@
                 const clickAreaText = document.getElementById('online-click-area-text');
                 if (!clickArea || !timerDisplay) return;
 
-                let cheatActive = false;
                 const cheatBtn = document.getElementById('dev-cheat-btn');
-                if (isDeveloper && cheatBtn) {
-                    cheatBtn.onclick = () => {
-                        cheatActive = true;
-                        cheatBtn.textContent = 'Cheat Aktif';
-                        cheatBtn.disabled = true;
-                        showToast('Cheat CPS diaktifkan!', 'info');
-                    };
+                if (cheatBtn) {
+                    cheatBtn.disabled = true; // Cheat doesn't apply to CPS test
                 }
 
                 clickArea.classList.remove('cursor-not-allowed');
@@ -1802,7 +2034,6 @@
                 async function finishTest() {
                     if (testFinished) return;
                     testFinished = true;
-                    if (devCheatInterval) clearInterval(devCheatInterval);
                     clickArea.style.cursor = 'not-allowed';
                     clickAreaText.textContent = 'Waktu Habis!';
 
@@ -1836,31 +2067,15 @@
                     } catch (e) { console.log("Gagal update progress, mungkin match sudah selesai.")}
                 }
 
-                function startCpsCheat() {
-                    const totalClicks = 100 * data.cpsDuration;
-                    const intervalTime = 50; // update every 50ms
-                    const clicksPerInterval = totalClicks / (data.cpsDuration * 1000 / intervalTime);
-
-                    devCheatInterval = setInterval(() => {
-                        if (testFinished) {
-                            clearInterval(devCheatInterval);
-                            return;
-                        }
-                        clickCount += clicksPerInterval;
-                        updateMyProgress();
-                    }, intervalTime);
-                }
-
                 clickArea.onclick = (e) => {
                     if(testFinished) return;
-                    
-                    if (cheatActive && clickCount === 0) {
-                        startCpsCheat();
+                    if(cheatActive) {
+                        clickCount = data.cpsDuration * 100; // Set clicks to achieve 100 CPS
+                        finishTest();
+                        return;
                     }
-
                     clickCount++;
-                    if (!cheatActive) updateMyProgress();
-
+                    updateMyProgress();
                     const ripple = document.createElement('span');
                     ripple.className = 'ripple';
                     clickArea.appendChild(ripple);
