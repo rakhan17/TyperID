@@ -60,7 +60,6 @@
             font-size: 0.8rem;
             position: relative;
             overflow: hidden;
-            /* FIX: Create a new stacking context to ensure overflow:hidden clips the transformed pseudo-element */
             -webkit-transform: translateZ(0);
             transform: translateZ(0);
         }
@@ -68,32 +67,30 @@
         .admin-tag { background: linear-gradient(90deg, #facc15, #fb923c, #facc15); background-size: 200% 200%; color: #111827; animation: gradient-animation 4s ease infinite; }
         .user-tag { background-color: #4b5563; color: #d1d5db; }
 
-        /* --- REFINED: Developer Tag Shimmer --- */
+        /* --- NEW & IMPROVED: Developer Tag Shimmer --- */
         @keyframes dev-glow-red {
             0%, 100% { box-shadow: 0 0 6px #ef4444, 0 0 12px #ef4444; }
             50% { box-shadow: 0 0 12px #f87171, 0 0 20px #f87171; }
         }
-        @keyframes refined-shimmer {
-            0% { transform: translateX(-200%) rotate(25deg); }
-            100% { transform: translateX(600%) rotate(25deg); }
+        @keyframes new-shimmer {
+            0% { background-position: -150% center; }
+            100% { background-position: 150% center; }
         }
         .dev-tag {
             background-color: #dc2626;
             color: white;
             text-shadow: 0 0 3px rgba(0,0,0,0.6);
             animation: dev-glow-red 3s ease-in-out infinite;
-        }
-        .dev-tag::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 20%;
-            height: 200%;
-            background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0) 100%);
-            transform: rotate(25deg);
-            animation: refined-shimmer 3s infinite linear;
-            animation-delay: 1s; /* Add a small delay to the loop */
+            background-image: linear-gradient(
+                100deg,
+                transparent 20%,
+                rgba(255, 255, 255, 0.4) 50%,
+                transparent 80%
+            );
+            background-size: 200% 100%;
+            background-repeat: no-repeat;
+            animation: dev-glow-red 3s ease-in-out infinite,
+                       new-shimmer 2.5s infinite linear 1s;
         }
         
         /* Overlays & Modals */
@@ -327,23 +324,28 @@
     <div class="toast-container" id="toast-container"></div>
 
     <script type="module">
-        // Firebase initialization
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, where, getDocs, limit, serverTimestamp, runTransaction, setDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        const firebaseConfig = {
-            apiKey: "AIzaSyDVphUcSBbIG98ueli8OrhkSnC3oHV4FHc",
-            authDomain: "typerid-online.firebaseapp.com",
-            projectId: "typerid-online",
-            storageBucket: "typerid-online.appspot.com",
-            messagingSenderId: "292685742496",
-            appId: "1:292685742496:web:e60fbc0fbda30ebacce4c5",
-            measurementId: "G-K2M5YHQTF4"
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        // Expose Firebase modules to the global window object for the main script
-        window.firebase = { db, doc, getDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, where, getDocs, limit, serverTimestamp, runTransaction, setDoc, orderBy };
-    </script>
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyDVphUcSBbIG98ueli8OrhkSnC3oHV4FHc",
+    authDomain: "typerid-online.firebaseapp.com",
+    projectId: "typerid-online",
+    storageBucket: "typerid-online.firebasestorage.app",
+    messagingSenderId: "292685742496",
+    appId: "1:292685742496:web:10a429c0d36222aacce4c5",
+    measurementId: "G-ZZ3KDBV71T"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -1269,16 +1271,33 @@
                 }
 
                 try {
-                    await addDoc(collection(db, "globalChat"), messageData);
+                    // Optimistic UI update
+                    const tempId = `temp_${Date.now()}`;
+                    const optimisticMessageData = { ...messageData, timestamp: { toMillis: () => Date.now() } };
+                    const li = renderChatMessage(optimisticMessageData, tempId);
+                    const messagesList = document.getElementById('chat-messages-list');
+                    messagesList.insertBefore(li, messagesList.firstChild);
+                    messagesList.parentElement.scrollTop = messagesList.parentElement.scrollHeight;
+
+
                     messageInput.value = '';
                     cancelReply();
                     if (typingTimeout) clearTimeout(typingTimeout);
                     if (myPlayerId) {
                         deleteDoc(doc(db, "typingStatus", myPlayerId));
                     }
+                    
+                    const docRef = await addDoc(collection(db, "globalChat"), messageData);
+                    const tempLi = messagesList.querySelector(`li[data-message-id="${tempId}"]`);
+                    if (tempLi) {
+                        tempLi.dataset.messageId = docRef.id;
+                    }
+
                 } catch (error) {
                     console.error("Error sending chat message:", error);
                     showToast("Gagal mengirim pesan.", "error");
+                    const tempLi = document.querySelector(`li[data-message-id^="temp_"]`);
+                    if (tempLi) tempLi.remove();
                 }
             }
 
@@ -1295,12 +1314,19 @@
                     snapshot.docChanges().forEach(change => {
                         const messageId = change.doc.id;
                         const messageData = change.doc.data();
+                        
+                        // Ignore local optimistic updates that are now confirmed
+                        if (messageData.senderId === myPlayerId && document.querySelector(`li[data-message-id="${messageId}"]`)) {
+                           return;
+                        }
+
                         const existingLi = messagesList.querySelector(`li[data-message-id="${messageId}"]`);
 
-                        if (change.type === "added" && !existingLi) {
+                        if (change.type === "added") {
+                            if(existingLi) return; // Already handled optimistically
                             const li = renderChatMessage(messageData, messageId);
                             li.classList.add('new-message');
-                            // Insert in correct chronological order
+                            
                             const existingMessages = Array.from(messagesList.querySelectorAll('li'));
                             const newerMessage = existingMessages.find(msg => {
                                 const msgTimestamp = msg.dataset.timestamp ? parseInt(msg.dataset.timestamp, 10) : 0;
@@ -1333,7 +1359,6 @@
                 if (message.timestamp) {
                     li.dataset.timestamp = message.timestamp.toMillis();
                 }
-
 
                 let bubbleClass = 'user-bubble';
                 if (message.senderIsDeveloper) bubbleClass = isMe ? 'my-dev-bubble dev-bubble-base' : 'dev-bubble dev-bubble-base';
